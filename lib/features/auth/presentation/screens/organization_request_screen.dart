@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../services/locator.dart';
-import '../../../shared/constants/app_constants.dart';
+import '../../../../services/locator.dart';
+import '../../../../shared/constants/app_constants.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';

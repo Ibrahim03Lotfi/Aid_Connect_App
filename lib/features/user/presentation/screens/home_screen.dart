@@ -36,12 +36,6 @@ class HomeView extends StatelessWidget {
               Navigator.pushNamed(context, AppRoutes.notifications);
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.profile);
-            },
-          ),
         ],
       ),
       body: BlocBuilder<HomeBloc, HomeState>(

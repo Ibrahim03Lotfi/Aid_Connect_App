@@ -327,7 +327,7 @@ class CaseDetailsView extends StatelessWidget {
       case 'rejected':
         return Icons.cancel;
       default:
-        return Icons.draft;
+        return Icons.description;
     }
   }
 

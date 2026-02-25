@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/organization_request_screen.dart';
+import '../../features/user/presentation/screens/user_main_screen.dart';
 import '../../features/user/presentation/screens/home_screen.dart';
 import '../../features/user/presentation/screens/governorates_screen.dart';
 import '../../features/user/presentation/screens/case_details_screen.dart';
@@ -55,7 +56,7 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const OrganizationRequestScreen());
 
       case home:
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
+        return MaterialPageRoute(builder: (_) => const UserMainScreen());
 
       case governorates:
         final args = settings.arguments as Map<String, dynamic>?;
