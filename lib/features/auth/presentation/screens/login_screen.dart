@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../config/routes/app_routes.dart';
+import '../../../../core/errors/failures.dart';
+import '../../../../services/locator.dart';
 import '../../../../shared/constants/app_constants.dart';
+import '../../domain/repositories/auth_repository.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +17,8 @@ class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
   late AnimationController _headlineController;
   late AnimationController _cardsController;
+  late AnimationController _circleController1;
+  late AnimationController _circleController2;
   late Animation<double> _headlineFade;
   late Animation<Offset> _headlineSlide;
   late List<Animation<double>> _cardAnimations;
@@ -93,8 +98,16 @@ class _LoginScreenState extends State<LoginScreen>
       );
     });
 
-    _headlineController.forward();
-    _cardsController.forward();
+    // Circle floating animations - slow continuous movement
+    _circleController1 = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
+
+    _circleController2 = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat(reverse: true);
 
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -108,6 +121,8 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _headlineController.dispose();
     _cardsController.dispose();
+    _circleController1.dispose();
+    _circleController2.dispose();
     _emailController.dispose();
     _orgNameController.dispose();
     _volunteerNameController.dispose();
@@ -127,10 +142,46 @@ class _LoginScreenState extends State<LoginScreen>
       await Future.delayed(const Duration(milliseconds: 100));
       setState(() => _isButtonPressed = false);
       setState(() => _isLoading = true);
-      await Future.delayed(const Duration(milliseconds: 800));
+      
+      // Actually perform login to persist auth data
+      final authRepository = locator<AuthRepository>();
+      final email = _currentIndex == 0 
+          ? _emailController.text 
+          : (_currentIndex == 1 
+              ? _orgNameController.text 
+              : _volunteerNameController.text);
+      
+      final result = await authRepository.login(
+        email: email,
+        password: _passwordController.text,
+        role: _getRoleFromIndex(_currentIndex),
+      );
+      
       setState(() => _isLoading = false);
-      final role = _getRoleFromIndex(_currentIndex);
-      _navigateBasedOnRole(role);
+      
+      result.fold(
+        (failure) {
+          // Show error
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(_mapFailureToMessage(failure))),
+          );
+        },
+        (user) {
+          // Navigate on success
+          _navigateBasedOnRole(user.role);
+        },
+      );
+    }
+  }
+
+  String _mapFailureToMessage(Failure failure) {
+    switch (failure.runtimeType.toString()) {
+      case 'ServerFailure':
+        return 'حدث خطأ في الخادم';
+      case 'NetworkFailure':
+        return 'لا يوجد اتصال بالإنترنت';
+      default:
+        return 'حدث خطأ غير متوقع';
     }
   }
 
@@ -189,75 +240,92 @@ class _LoginScreenState extends State<LoginScreen>
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              // Soft decorative blob
-                              Positioned(
-                                top: 20,
-                                right: -30,
-                                child: Container(
-                                  width: 180,
-                                  height: 180,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: friendlyBlue.withAlpha(20),
-                                  ),
-                                ),
+                              // Soft decorative blob - Animated
+                              AnimatedBuilder(
+                                animation: _circleController1,
+                                builder: (context, child) {
+                                  return Positioned(
+                                    top: 20 + (_circleController1.value * 50),
+                                    right: -30 + (_circleController1.value * 30),
+                                    child: Container(
+                                      width: 180,
+                                      height: 180,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: friendlyBlue.withAlpha(20),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                              Positioned(
-                                bottom: 20,
-                                left: -20,
-                                child: Container(
-                                  width: 120,
-                                  height: 120,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: softTeal.withAlpha(15),
-                                  ),
-                                ),
+                              AnimatedBuilder(
+                                animation: _circleController2,
+                                builder: (context, child) {
+                                  return Positioned(
+                                    bottom: 20 + (_circleController2.value * 40),
+                                    left: -20 + (_circleController2.value * 25),
+                                    child: Container(
+                                      width: 120,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: softTeal.withAlpha(15),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                               // Headline content
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 32),
-                                child: FadeTransition(
-                                  opacity: _headlineFade,
-                                  child: SlideTransition(
-                                    position: _headlineSlide,
-                                    child: Column(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'معًا نصنع',
+                                      style: TextStyle(
+                                        fontSize: 34,
+                                        fontWeight: FontWeight.w700,
+                                        color: textDark,
+                                        height: 1.25,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        const Text(
-                                          'معًا نصنع',
-                                          style: TextStyle(
-                                            fontSize: 34,
-                                            fontWeight: FontWeight.w700,
-                                            color: textDark,
-                                            height: 1.25,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const Text(
-                                          'أثرًا حقيقيًا',
+                                        Text(
+                                          'أثرًا ',
                                           style: TextStyle(
                                             fontSize: 34,
                                             fontWeight: FontWeight.w700,
                                             color: friendlyBlue,
                                             height: 1.25,
                                           ),
-                                          textAlign: TextAlign.center,
                                         ),
-                                        const SizedBox(height: 12),
                                         Text(
-                                          'انضم لمجتمع يؤمن بقوة العطاء',
+                                          'حقيقيًا',
                                           style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            color: textMedium,
-                                            height: 1.4,
+                                            fontSize: 34,
+                                            fontWeight: FontWeight.w700,
+                                            color: textDark,
+                                            height: 1.25,
                                           ),
-                                          textAlign: TextAlign.center,
                                         ),
                                       ],
                                     ),
-                                  ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'انضم لمجتمع يؤمن بقوة العطاء',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: textMedium,
+                                        height: 1.4,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -304,79 +372,71 @@ class _LoginScreenState extends State<LoginScreen>
       children: List.generate(_roles.length, (index) {
         final isSelected = _currentIndex == index;
         return Expanded(
-          child: AnimatedBuilder(
-            animation: _cardAnimations[index],
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _cardAnimations[index],
-                child: GestureDetector(
-                  onTap: () => _onRoleSelected(index),
-                  child: AnimatedContainer(
-                    duration: microDuration,
-                    curve: microCurve,
-                    margin: EdgeInsets.only(
-                      left: index == 0 ? 0 : 8,
-                      right: index == 2 ? 0 : 8,
-                    ),
-                    transform: Matrix4.identity()..scale(
-                      isSelected ? 1.04 : (1.0 + (_cardAnimations[index].value - 1.0) * 0.1),
-                    ),
-                    child: Container(
-                      height: 88,
-                      decoration: BoxDecoration(
-                        color: cardFill,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: isSelected ? friendlyBlue : Colors.transparent,
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: isSelected 
-                                ? friendlyBlue.withAlpha(30)
-                                : textDark.withAlpha(8),
-                            blurRadius: isSelected ? 16 : 8,
-                            offset: const Offset(0, 4),
-                            spreadRadius: isSelected ? 2 : 0,
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          AnimatedContainer(
-                            duration: microDuration,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: isSelected 
-                                  ? friendlyBlue.withAlpha(20)
-                                  : inputFill,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isSelected 
-                                  ? _roles[index]['activeIcon'] as IconData
-                                  : _roles[index]['icon'] as IconData,
-                              size: 24,
-                              color: isSelected ? friendlyBlue : textMedium,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _roles[index]['label'] as String,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                              color: isSelected ? friendlyBlue : textDark,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+          child: GestureDetector(
+            onTap: () => _onRoleSelected(index),
+            child: AnimatedContainer(
+              duration: microDuration,
+              curve: microCurve,
+              margin: EdgeInsets.only(
+                left: index == 0 ? 0 : 8,
+                right: index == 2 ? 0 : 8,
+              ),
+              transform: Matrix4.identity()..scale(
+                isSelected ? 1.04 : 1.0,
+              ),
+              child: Container(
+                height: 88,
+                decoration: BoxDecoration(
+                  color: cardFill,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isSelected ? friendlyBlue : Colors.transparent,
+                    width: 2,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isSelected 
+                          ? friendlyBlue.withAlpha(30)
+                          : textDark.withAlpha(8),
+                      blurRadius: isSelected ? 16 : 8,
+                      offset: const Offset(0, 4),
+                      spreadRadius: isSelected ? 2 : 0,
+                    ),
+                  ],
                 ),
-              );
-            },
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedContainer(
+                      duration: microDuration,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isSelected 
+                            ? friendlyBlue.withAlpha(20)
+                            : inputFill,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isSelected 
+                            ? _roles[index]['activeIcon'] as IconData
+                            : _roles[index]['icon'] as IconData,
+                        size: 24,
+                        color: isSelected ? friendlyBlue : textMedium,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _roles[index]['label'] as String,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                        color: isSelected ? friendlyBlue : textDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         );
       }),

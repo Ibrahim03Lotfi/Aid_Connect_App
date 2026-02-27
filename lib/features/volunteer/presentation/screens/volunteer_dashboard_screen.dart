@@ -5,6 +5,17 @@ import '../../../../services/locator.dart';
 import '../../domain/entities/volunteer_case.dart';
 import '../../domain/repositories/volunteer_repository.dart';
 
+// Light of Impact - Warm Hopeful Color System
+const Color backgroundOffWhite = Color(0xFFF9FAFB);
+const Color softBlueTint = Color(0xFFF3F8FC);
+const Color friendlyBlue = Color(0xFF1E7ABF);
+const Color softTeal = Color(0xFF3BB3A9);
+const Color textDark = Color(0xFF1F2937);
+const Color textMedium = Color(0xFF6B7280);
+const Color textLight = Color(0xFF9CA3AF);
+const Color cardWhite = Color(0xFFFFFFFF);
+const Color borderLight = Color(0xFFE5E7EB);
+
 class VolunteerDashboardScreen extends StatefulWidget {
   const VolunteerDashboardScreen({super.key});
 
@@ -38,23 +49,41 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: backgroundOffWhite,
       appBar: AppBar(
-        title: const Text('لوحة المتطوع'),
+        backgroundColor: backgroundOffWhite,
+        elevation: 0,
+        title: Text(
+          'لوحة المتطوع',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: textDark,
+          ),
+        ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.notifications);
-            },
+          Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: cardWhite,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderLight, width: 1),
+            ),
+            child: IconButton(
+              icon: Icon(Icons.notifications_outlined, color: friendlyBlue, size: 20),
+              onPressed: () {
+                Navigator.pushNamed(context, AppRoutes.notifications);
+              },
+            ),
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildLoadingView()
           : SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -64,21 +93,23 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
                     const SizedBox(height: 24),
                     _buildUrgentBanner(),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       'الإجراءات السريعة',
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: friendlyBlue,
                       ),
                     ),
                     const SizedBox(height: 16),
                     _buildQuickActions(context),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       'آخر النشاطات',
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: friendlyBlue,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -90,28 +121,87 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
     );
   }
 
+  Widget _buildLoadingView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: cardWhite,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: friendlyBlue.withAlpha(20),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(friendlyBlue),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'جاري التحميل...',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: textMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildWelcomeSection() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF1E7ABF),
-            const Color(0xFF1E7ABF).withAlpha(200),
-          ],
+        gradient: const LinearGradient(
+          colors: [friendlyBlue, softTeal],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: friendlyBlue.withAlpha(30),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          const CircleAvatar(
-            radius: 30,
-            backgroundColor: Colors.white,
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: cardWhite,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: friendlyBlue.withAlpha(20),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: Icon(
               Icons.volunteer_activism,
-              color: Color(0xFF1E7ABF),
+              color: friendlyBlue,
               size: 32,
             ),
           ),
@@ -120,11 +210,12 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'أهلاً بعودتك!',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Colors.white.withAlpha(90),
                     fontSize: 14,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -133,7 +224,7 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -150,22 +241,22 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
         _buildStatCard(
           'الحالات المكتملة',
           '${_profile?['completedCases'] ?? 0}',
-          Colors.green,
-          Icons.check_circle,
+          softTeal,
+          Icons.check_circle_outlined,
         ),
         const SizedBox(width: 12),
         _buildStatCard(
           'الحالات النشطة',
           '${_profile?['activeCases'] ?? 0}',
-          const Color(0xFF1E7ABF),
-          Icons.assignment,
+          friendlyBlue,
+          Icons.assignment_outlined,
         ),
         const SizedBox(width: 12),
         _buildStatCard(
           'سنوات الخبرة',
           '${DateTime.now().year - int.parse(_profile?['joinedAt'] ?? '2020')}',
           Colors.orange,
-          Icons.star,
+          Icons.star_outline,
         ),
       ],
     );
@@ -181,19 +272,33 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withAlpha(20),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withAlpha(100)),
+          color: cardWhite,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderLight, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: friendlyBlue.withAlpha(8),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withAlpha(15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(height: 10),
             Text(
               value,
               style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
                 color: color,
               ),
             ),
@@ -201,8 +306,8 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
+                fontSize: 11,
+                color: textMedium,
               ),
               textAlign: TextAlign.center,
             ),
@@ -216,19 +321,19 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.withAlpha(20),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.withAlpha(100)),
+        color: Colors.red.withAlpha(15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.withAlpha(40), width: 1),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.red.withAlpha(30),
-              borderRadius: BorderRadius.circular(10),
+              color: Colors.red.withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.campaign, color: Colors.red),
+            child: const Icon(Icons.campaign_outlined, color: Colors.red, size: 24),
           ),
           const SizedBox(width: 12),
           const Expanded(
@@ -238,8 +343,9 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
                 Text(
                   'حالات بحاجة للمساعدة العاجلة!',
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                     color: Colors.red,
+                    fontSize: 14,
                   ),
                 ),
                 SizedBox(height: 4),
@@ -262,8 +368,8 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
           context,
           'الحالات المتاحة',
           'استعرض الحالات وقدم طلب تطوع',
-          Icons.search,
-          const Color(0xFF1E7ABF),
+          Icons.search_outlined,
+          friendlyBlue,
           () {},
         ),
         const SizedBox(height: 12),
@@ -271,8 +377,8 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
           context,
           'طلباتي',
           'تابع حالة طلبات التطوع',
-          Icons.assignment,
-          Colors.green,
+          Icons.assignment_outlined,
+          softTeal,
           () {},
         ),
         const SizedBox(height: 12),
@@ -280,7 +386,7 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
           context,
           'الملف الشخصي',
           'تحديث بياناتك ومهاراتك',
-          Icons.person,
+          Icons.person_outlined,
           Colors.orange,
           () {},
         ),
@@ -296,27 +402,45 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
     Color color,
     VoidCallback onTap,
   ) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+    return Container(
+      decoration: BoxDecoration(
+        color: cardWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderLight, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: friendlyBlue.withAlpha(8),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: ListTile(
         onTap: onTap,
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: color.withAlpha(20),
+            color: color.withAlpha(15),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: color),
+          child: Icon(icon, color: color, size: 22),
         ),
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            color: textDark,
+          ),
         ),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 12,
+            color: textMedium,
+          ),
+        ),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: textLight),
       ),
     );
   }
@@ -326,45 +450,66 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
       {
         'title': 'تم قبول طلبك في "توزيع سلال غذائية"',
         'time': 'منذ 2 ساعة',
-        'icon': Icons.check_circle,
-        'color': Colors.green,
+        'icon': Icons.check_circle_outlined,
+        'color': softTeal,
       },
       {
         'title': 'تقدمت بطلب تطوع جديد',
         'time': 'منذ 5 ساعات',
-        'icon': Icons.send,
-        'color': const Color(0xFF1E7ABF),
+        'icon': Icons.send_outlined,
+        'color': friendlyBlue,
       },
       {
         'title': 'أكملت حالة "إفطار صائم"',
         'time': 'منذ يوم',
-        'icon': Icons.volunteer_activism,
+        'icon': Icons.volunteer_activism_outlined,
         'color': Colors.orange,
       },
     ];
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: activities.length,
-      itemBuilder: (context, index) {
-        final activity = activities[index];
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: (activity['color'] as Color).withAlpha(30),
-            child: Icon(
-              activity['icon'] as IconData,
-              color: activity['color'] as Color,
-              size: 20,
+    return Container(
+      decoration: BoxDecoration(
+        color: cardWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderLight, width: 1),
+      ),
+      child: ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: activities.length,
+        itemBuilder: (context, index) {
+          final activity = activities[index];
+          return ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: (activity['color'] as Color).withAlpha(15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                activity['icon'] as IconData,
+                color: activity['color'] as Color,
+                size: 20,
+              ),
             ),
-          ),
-          title: Text(activity['title'] as String),
-          subtitle: Text(
-            activity['time'] as String,
-            style: TextStyle(color: Colors.grey[500]),
-          ),
-        );
-      },
+            title: Text(
+              activity['title'] as String,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: textDark,
+              ),
+            ),
+            subtitle: Text(
+              activity['time'] as String,
+              style: TextStyle(
+                fontSize: 12,
+                color: textLight,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

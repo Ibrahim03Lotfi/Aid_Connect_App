@@ -1,5 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../config/routes/app_routes.dart';
+
+// Light of Impact - Warm Hopeful Color System
+const Color backgroundOffWhite = Color(0xFFF9FAFB);
+const Color softBlueTint = Color(0xFFF3F8FC);
+const Color friendlyBlue = Color(0xFF1E7ABF);
+const Color softTeal = Color(0xFF3BB3A9);
+const Color textDark = Color(0xFF1F2937);
+const Color textMedium = Color(0xFF6B7280);
+const Color textLight = Color(0xFF9CA3AF);
+const Color cardWhite = Color(0xFFFFFFFF);
+const Color borderLight = Color(0xFFE5E7EB);
+const Color inputFill = Color(0xFFF7FAFC);
 
 class OrgProfileScreen extends StatefulWidget {
   const OrgProfileScreen({super.key});
@@ -12,7 +25,6 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
   bool _isLoading = false;
   bool _isEditing = false;
   
-  // Static mock data for organization
   final Map<String, dynamic> _orgData = {
     'name': 'منظمة الخير للإغاثة',
     'email': 'info@khair-org.org',
@@ -56,22 +68,14 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
 
   Future<void> _saveProfile() async {
     setState(() => _isLoading = true);
-    
-    // Simulate API call
     await Future.delayed(const Duration(seconds: 1));
-    
     setState(() {
       _isLoading = false;
       _isEditing = false;
     });
     
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تم حفظ البيانات بنجاح!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      _showSnackBar('تم حفظ البيانات بنجاح!', softTeal);
     }
   }
 
@@ -79,37 +83,53 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
     if (!_passwordFormKey.currentState!.validate()) return;
     
     setState(() => _isLoading = true);
-    
-    // Simulate API call
     await Future.delayed(const Duration(seconds: 1));
-    
     setState(() => _isLoading = false);
     
-    // Clear password fields
     _currentPasswordController.clear();
     _newPasswordController.clear();
     _confirmPasswordController.clear();
     
     if (mounted) {
-      Navigator.pop(context); // Close dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تم تغيير كلمة المرور بنجاح!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      Navigator.pop(context);
+      _showSnackBar('تم تغيير كلمة المرور بنجاح!', softTeal);
     }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(12),
+      ),
+    );
   }
 
   void _showChangePasswordDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        backgroundColor: cardWhite,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
           children: [
-            Icon(Icons.lock, color: Color(0xFF1E7ABF)),
-            SizedBox(width: 8),
-            Text('تغيير كلمة المرور'),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: friendlyBlue.withAlpha(15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.lock_outline, color: friendlyBlue),
+            ),
+            const SizedBox(width: 12),
+            const Text('تغيير كلمة المرور'),
           ],
         ),
         content: Form(
@@ -118,74 +138,34 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextFormField(
+                _buildPasswordField(
                   controller: _currentPasswordController,
-                  obscureText: _obscureCurrentPassword,
-                  decoration: InputDecoration(
-                    labelText: 'كلمة المرور الحالية *',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscureCurrentPassword 
-                          ? Icons.visibility_off 
-                          : Icons.visibility),
-                      onPressed: () => setState(() => 
-                          _obscureCurrentPassword = !_obscureCurrentPassword),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'يرجى إدخال كلمة المرور الحالية';
-                    }
-                    return null;
-                  },
+                  label: 'كلمة المرور الحالية',
+                  isObscure: _obscureCurrentPassword,
+                  onToggle: () => setState(() => _obscureCurrentPassword = !_obscureCurrentPassword),
+                  validator: (v) => v?.isEmpty ?? true ? 'يرجى إدخال كلمة المرور الحالية' : null,
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
+                const SizedBox(height: 12),
+                _buildPasswordField(
                   controller: _newPasswordController,
-                  obscureText: _obscureNewPassword,
-                  decoration: InputDecoration(
-                    labelText: 'كلمة المرور الجديدة *',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscureNewPassword 
-                          ? Icons.visibility_off 
-                          : Icons.visibility),
-                      onPressed: () => setState(() => 
-                          _obscureNewPassword = !_obscureNewPassword),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'يرجى إدخال كلمة المرور الجديدة';
-                    }
-                    if (value.length < 8) {
-                      return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
-                    }
+                  label: 'كلمة المرور الجديدة',
+                  isObscure: _obscureNewPassword,
+                  onToggle: () => setState(() => _obscureNewPassword = !_obscureNewPassword),
+                  validator: (v) {
+                    if (v?.isEmpty ?? true) return 'يرجى إدخال كلمة المرور الجديدة';
+                    if (v!.length < 8) return 'يجب أن تكون 8 أحرف على الأقل';
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
+                const SizedBox(height: 12),
+                _buildPasswordField(
                   controller: _confirmPasswordController,
-                  obscureText: _obscureConfirmPassword,
-                  decoration: InputDecoration(
-                    labelText: 'تأكيد كلمة المرور *',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscureConfirmPassword 
-                          ? Icons.visibility_off 
-                          : Icons.visibility),
-                      onPressed: () => setState(() => 
-                          _obscureConfirmPassword = !_obscureConfirmPassword),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'يرجى تأكيد كلمة المرور';
-                    }
-                    if (value != _newPasswordController.text) {
-                      return 'كلمات المرور غير متطابقة';
-                    }
+                  label: 'تأكيد كلمة المرور',
+                  isObscure: _obscureConfirmPassword,
+                  onToggle: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                  validator: (v) {
+                    if (v?.isEmpty ?? true) return 'يرجى تأكيد كلمة المرور';
+                    if (v != _newPasswordController.text) return 'كلمات المرور غير متطابقة';
                     return null;
                   },
                 ),
@@ -201,19 +181,78 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
               _newPasswordController.clear();
               _confirmPasswordController.clear();
             },
-            child: const Text('إلغاء'),
+            child: Text('إلغاء', style: TextStyle(color: textMedium)),
           ),
-          ElevatedButton(
-            onPressed: _isLoading ? null : _changePassword,
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('تغيير'),
+          GestureDetector(
+            onTap: _isLoading ? null : _changePassword,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [friendlyBlue, softTeal],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'تغيير',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String label,
+    required bool isObscure,
+    required VoidCallback onToggle,
+    required String? Function(String?) validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: isObscure,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: textMedium, fontSize: 13),
+        prefixIcon: Icon(Icons.lock_outline, color: friendlyBlue, size: 20),
+        suffixIcon: GestureDetector(
+          onTap: onToggle,
+          child: Icon(
+            isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            color: textLight,
+            size: 20,
+          ),
+        ),
+        filled: true,
+        fillColor: inputFill,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: borderLight),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: borderLight),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: friendlyBlue, width: 1.5),
+        ),
       ),
     );
   }
@@ -222,25 +261,53 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('تأكيد تسجيل الخروج'),
+        backgroundColor: cardWhite,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withAlpha(15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.logout, color: Colors.red),
+            ),
+            const SizedBox(width: 12),
+            const Text('تأكيد تسجيل الخروج'),
+          ],
+        ),
         content: const Text('هل أنت متأكد من تسجيل الخروج؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            child: Text('إلغاء', style: TextStyle(color: textMedium)),
           ),
-          ElevatedButton(
-            onPressed: () {
+          GestureDetector(
+            onTap: () {
               Navigator.pop(context);
-              // Navigate to login
               Navigator.pushNamedAndRemoveUntil(
                 context,
-                '/login',
+                AppRoutes.login,
                 (route) => false,
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('خروج'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'خروج',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -250,51 +317,77 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: backgroundOffWhite,
       appBar: AppBar(
-        title: const Text('الملف الشخصي'),
+        backgroundColor: backgroundOffWhite,
+        elevation: 0,
+        title: Text(
+          'الملف الشخصي',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: textDark,
+          ),
+        ),
         centerTitle: true,
         actions: [
           if (!_isEditing)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => setState(() => _isEditing = true),
+            Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: cardWhite,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: borderLight, width: 1),
+              ),
+              child: IconButton(
+                icon: Icon(Icons.edit_outlined, color: friendlyBlue, size: 20),
+                onPressed: () => setState(() => _isEditing = true),
+              ),
             )
           else
-            IconButton(
-              icon: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+            Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [friendlyBlue, softTeal],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: _isLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
                     )
-                  : const Icon(Icons.check),
-              onPressed: _isLoading ? null : _saveProfile,
+                  : IconButton(
+                      icon: const Icon(Icons.check, color: Colors.white, size: 20),
+                      onPressed: _isLoading ? null : _saveProfile,
+                    ),
             ),
         ],
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile Header
               _buildProfileHeader(),
-              const SizedBox(height: 24),
-              
-              // Organization Info Section
+              const SizedBox(height: 28),
               _buildSectionTitle('معلومات المنظمة'),
               const SizedBox(height: 16),
               _buildOrgInfoSection(),
-              const SizedBox(height: 24),
-              
-              // Contact Info Section
+              const SizedBox(height: 28),
               _buildSectionTitle('معلومات التواصل'),
               const SizedBox(height: 16),
               _buildContactSection(),
-              const SizedBox(height: 24),
-              
-              // Actions Section
+              const SizedBox(height: 28),
               _buildSectionTitle('الإعدادات'),
               const SizedBox(height: 16),
               _buildActionsSection(),
@@ -316,15 +409,22 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
                 height: 100,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF1E7ABF), Color(0xFF60A5FA)],
+                    colors: [friendlyBlue, softTeal],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: friendlyBlue.withAlpha(30),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
                 child: const Icon(
                   Icons.business,
-                  size: 50,
+                  size: 48,
                   color: Colors.white,
                 ),
               ),
@@ -333,21 +433,23 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
                   bottom: 0,
                   right: 0,
                   child: Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: cardWhite,
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: borderLight),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha(30),
-                          blurRadius: 4,
+                          color: Colors.black.withAlpha(10),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      size: 20,
-                      color: Color(0xFF1E7ABF),
+                    child: Icon(
+                      Icons.camera_alt_outlined,
+                      size: 18,
+                      color: friendlyBlue,
                     ),
                   ),
                 ),
@@ -356,9 +458,10 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
           const SizedBox(height: 16),
           Text(
             _orgData['name'],
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
+              color: textDark,
             ),
           ),
           const SizedBox(height: 4),
@@ -366,26 +469,27 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
             'عضو منذ ${_orgData['establishedYear']}',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: textMedium,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.green.withAlpha(30),
+              color: softTeal.withAlpha(20),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: softTeal.withAlpha(50), width: 1),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.verified, color: Colors.green, size: 16),
-                SizedBox(width: 4),
+                Icon(Icons.verified_rounded, color: softTeal, size: 16),
+                const SizedBox(width: 4),
                 Text(
                   'منظمة معتمدة',
                   style: TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
+                    color: softTeal,
+                    fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
                 ),
@@ -400,18 +504,28 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: Color(0xFF1E7ABF),
+        fontWeight: FontWeight.w700,
+        color: friendlyBlue,
       ),
     );
   }
 
   Widget _buildOrgInfoSection() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: cardWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderLight, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: friendlyBlue.withAlpha(8),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -419,21 +533,21 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
             _buildInfoField(
               label: 'اسم المنظمة',
               controller: _nameController,
-              icon: Icons.business,
+              icon: Icons.business_outlined,
               enabled: _isEditing,
             ),
             const SizedBox(height: 16),
             _buildInfoField(
               label: 'الرقم الضريبي',
               value: _orgData['registrationNumber'],
-              icon: Icons.numbers,
+              icon: Icons.numbers_outlined,
               enabled: false,
             ),
             const SizedBox(height: 16),
             _buildInfoField(
               label: 'الموقع الإلكتروني',
               controller: _websiteController,
-              icon: Icons.language,
+              icon: Icons.language_outlined,
               enabled: _isEditing,
             ),
             const SizedBox(height: 16),
@@ -445,9 +559,19 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
   }
 
   Widget _buildContactSection() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: cardWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderLight, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: friendlyBlue.withAlpha(8),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -455,7 +579,7 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
             _buildInfoField(
               label: 'البريد الإلكتروني',
               controller: _emailController,
-              icon: Icons.email,
+              icon: Icons.email_outlined,
               enabled: _isEditing,
               keyboardType: TextInputType.emailAddress,
             ),
@@ -463,7 +587,7 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
             _buildInfoField(
               label: 'رقم الهاتف',
               controller: _phoneController,
-              icon: Icons.phone,
+              icon: Icons.phone_outlined,
               enabled: _isEditing,
               keyboardType: TextInputType.phone,
             ),
@@ -471,7 +595,7 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
             _buildInfoField(
               label: 'العنوان',
               controller: _addressController,
-              icon: Icons.location_on,
+              icon: Icons.location_on_outlined,
               enabled: _isEditing,
               maxLines: 2,
             ),
@@ -497,19 +621,31 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey[600],
+            fontWeight: FontWeight.w600,
+            color: textMedium,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         if (enabled && controller != null)
           TextFormField(
             controller: controller,
             keyboardType: keyboardType,
             maxLines: maxLines,
             decoration: InputDecoration(
-              prefixIcon: Icon(icon, color: const Color(0xFF1E7ABF)),
+              prefixIcon: Icon(icon, color: friendlyBlue, size: 20),
+              filled: true,
+              fillColor: inputFill,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: borderLight),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: borderLight),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: friendlyBlue, width: 1.5),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12,
@@ -522,20 +658,20 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
+              color: softBlueTint,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderLight),
             ),
             child: Row(
               children: [
-                Icon(icon, color: Colors.grey[500], size: 20),
+                Icon(icon, color: textLight, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     controller?.text ?? value ?? '',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[800],
+                      color: textDark,
                     ),
                   ),
                 ),
@@ -554,17 +690,29 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
           'نبذة عن المنظمة',
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey[600],
+            fontWeight: FontWeight.w600,
+            color: textMedium,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         if (_isEditing)
           TextFormField(
             controller: _descriptionController,
             maxLines: 4,
             decoration: InputDecoration(
+              filled: true,
+              fillColor: inputFill,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: borderLight),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: borderLight),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: friendlyBlue, width: 1.5),
               ),
               contentPadding: const EdgeInsets.all(12),
             ),
@@ -574,15 +722,15 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
+              color: softBlueTint,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderLight),
             ),
             child: Text(
               _descriptionController.text,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[800],
+                color: textDark,
               ),
             ),
           ),
@@ -591,49 +739,94 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
   }
 
   Widget _buildActionsSection() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.lock, color: Color(0xFF1E7ABF)),
-            title: const Text('تغيير كلمة المرور'),
-            subtitle: const Text('تحديث كلمة المرور الخاصة بك'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: _showChangePasswordDialog,
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.notifications, color: Colors.orange),
-            title: const Text('إعدادات الإشعارات'),
-            subtitle: const Text('تخصيص الإشعارات'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // Navigate to notification settings
-            },
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.help, color: Colors.green),
-            title: const Text('المساعدة والدعم'),
-            subtitle: const Text('تواصل مع فريق الدعم'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // Navigate to support
-            },
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text(
-              'تسجيل الخروج',
-              style: TextStyle(color: Colors.red),
-            ),
-            onTap: _logout,
+    return Container(
+      decoration: BoxDecoration(
+        color: cardWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderLight, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: friendlyBlue.withAlpha(8),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
+      child: Column(
+        children: [
+          _buildMenuItem(
+            icon: Icons.lock_outline,
+            title: 'تغيير كلمة المرور',
+            subtitle: 'تحديث كلمة المرور الخاصة بك',
+            color: friendlyBlue,
+            onTap: _showChangePasswordDialog,
+          ),
+          Divider(color: borderLight, height: 1, indent: 56),
+          _buildMenuItem(
+            icon: Icons.notifications_outlined,
+            title: 'إعدادات الإشعارات',
+            subtitle: 'تخصيص الإشعارات',
+            color: Colors.orange,
+            onTap: () {},
+          ),
+          Divider(color: borderLight, height: 1, indent: 56),
+          _buildMenuItem(
+            icon: Icons.help_outline,
+            title: 'المساعدة والدعم',
+            subtitle: 'تواصل مع فريق الدعم',
+            color: softTeal,
+            onTap: () {},
+          ),
+          Divider(color: borderLight, height: 1, indent: 56),
+          _buildMenuItem(
+            icon: Icons.logout,
+            title: 'تسجيل الخروج',
+            subtitle: '',
+            color: Colors.red,
+            onTap: _logout,
+            isDanger: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+    bool isDanger = false,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withAlpha(15),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: isDanger ? Colors.red : textDark,
+        ),
+      ),
+      subtitle: subtitle.isNotEmpty
+          ? Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: textMedium,
+              ),
+            )
+          : null,
+      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: textLight),
     );
   }
 

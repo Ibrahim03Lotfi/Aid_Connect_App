@@ -8,6 +8,17 @@ import '../bloc/org_cases_bloc/org_cases_bloc.dart';
 import '../bloc/org_cases_bloc/org_cases_event.dart';
 import '../bloc/org_cases_bloc/org_cases_state.dart';
 
+// Light of Impact - Warm Hopeful Color System
+const Color backgroundOffWhite = Color(0xFFF9FAFB);
+const Color softBlueTint = Color(0xFFF3F8FC);
+const Color friendlyBlue = Color(0xFF1E7ABF);
+const Color softTeal = Color(0xFF3BB3A9);
+const Color textDark = Color(0xFF1F2937);
+const Color textMedium = Color(0xFF6B7280);
+const Color textLight = Color(0xFF9CA3AF);
+const Color cardWhite = Color(0xFFFFFFFF);
+const Color borderLight = Color(0xFFE5E7EB);
+
 class OrgCasesScreen extends StatelessWidget {
   const OrgCasesScreen({super.key});
 
@@ -62,49 +73,52 @@ class _OrgCasesViewState extends State<OrgCasesView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: backgroundOffWhite,
       appBar: AppBar(
-        title: const Text('حالات المنظمة'),
+        backgroundColor: backgroundOffWhite,
+        elevation: 0,
+        title: Text(
+          'حالات المنظمة',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: textDark,
+          ),
+        ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.createCase);
-            },
+          Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: cardWhite,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderLight, width: 1),
+            ),
+            child: IconButton(
+              icon: Icon(Icons.add, color: friendlyBlue, size: 20),
+              onPressed: () {
+                Navigator.pushNamed(context, AppRoutes.createCase);
+              },
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
-          // Status Filter Chips
           _buildFilterChips(),
-          
-          // Cases List
           Expanded(
             child: BlocConsumer<OrgCasesBloc, OrgCasesState>(
               listener: (context, state) {
                 if (state is OrgCaseDeleted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.green,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  _showSnackBar(state.message, softTeal);
                 }
                 if (state is OrgCasesError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.red,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  _showSnackBar(state.message, Colors.red);
                 }
               },
               builder: (context, state) {
                 if (state is OrgCasesLoading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return _buildLoadingView();
                 }
 
                 if (state is OrgCasesError && state is! OrgCasesLoaded) {
@@ -118,7 +132,7 @@ class _OrgCasesViewState extends State<OrgCasesView> {
                       ? state.cases
                       : state is OrgCasesLoadingMore
                           ? (state as OrgCasesLoadingMore).currentCases
-                          : (state as OrgCaseDeleting).caseId != null
+                          : state is OrgCaseDeleting
                               ? (context.read<OrgCasesBloc>().state
                                       as OrgCasesLoaded)
                                   .cases
@@ -134,15 +148,26 @@ class _OrgCasesViewState extends State<OrgCasesView> {
                           .read<OrgCasesBloc>()
                           .add(RefreshOrgCasesEvent(status: _selectedFilter));
                     },
+                    color: friendlyBlue,
+                    backgroundColor: cardWhite,
                     child: ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       itemCount: cases.length + (state is OrgCasesLoadingMore ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (index == cases.length) {
                           return const Padding(
                             padding: EdgeInsets.all(16),
-                            child: Center(child: CircularProgressIndicator()),
+                            child: Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  valueColor: AlwaysStoppedAnimation<Color>(friendlyBlue),
+                                ),
+                              ),
+                            ),
                           );
                         }
                         return _buildCaseCard(cases[index]);
@@ -160,20 +185,80 @@ class _OrgCasesViewState extends State<OrgCasesView> {
     );
   }
 
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(12),
+      ),
+    );
+  }
+
+  Widget _buildLoadingView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: cardWhite,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: friendlyBlue.withAlpha(20),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(friendlyBlue),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'جاري تحميل الحالات...',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: textMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFilterChips() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: _filters.map((filter) {
             final isSelected = _selectedFilter == filter['value'];
+            final isAll = filter['value'] == null;
+            final color = isAll
+                ? friendlyBlue
+                : _getFilterColor(filter['value'] as String?);
             return Padding(
               padding: const EdgeInsets.only(left: 8),
-              child: ChoiceChip(
-                label: Text(filter['label']),
-                selected: isSelected,
-                onSelected: (selected) {
+              child: GestureDetector(
+                onTap: () {
                   setState(() {
                     _selectedFilter = filter['value'];
                   });
@@ -181,12 +266,25 @@ class _OrgCasesViewState extends State<OrgCasesView> {
                     FilterByStatusEvent(status: _selectedFilter),
                   );
                 },
-                selectedColor: Theme.of(context).primaryColor.withAlpha(30),
-                labelStyle: TextStyle(
-                  color: isSelected
-                      ? Theme.of(context).primaryColor
-                      : Colors.grey[700],
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? color.withAlpha(20) : cardWhite,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? color : borderLight,
+                      width: isSelected ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Text(
+                    filter['label'] as String,
+                    style: TextStyle(
+                      color: isSelected ? color : textMedium,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ),
             );
@@ -196,96 +294,106 @@ class _OrgCasesViewState extends State<OrgCasesView> {
     );
   }
 
+  Color _getFilterColor(String? status) {
+    switch (status) {
+      case 'pending':
+        return Colors.orange;
+      case 'approved':
+        return softTeal;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return friendlyBlue;
+    }
+  }
+
   Widget _buildCaseCard(OrgCase orgCase) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () {
-          Navigator.pushNamed(
-            context,
-            AppRoutes.caseDetails,
-            arguments: {'caseId': orgCase.id},
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          AppRoutes.caseDetails,
+          arguments: {'caseId': orgCase.id},
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: cardWhite,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderLight, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: friendlyBlue.withAlpha(8),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Status and Priority Row
               Row(
                 children: [
                   _buildStatusBadge(orgCase.status),
                   const SizedBox(width: 8),
                   _buildPriorityBadge(orgCase.priority),
                   const Spacer(),
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'delete') {
-                        _showDeleteConfirmation(orgCase);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('حذف', style: TextStyle(color: Colors.red)),
-                          ],
-                        ),
+                  GestureDetector(
+                    onTap: () => _showDeleteConfirmation(orgCase),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withAlpha(15),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ],
+                      child: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.red,
+                        size: 18,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              
-              // Title
               Text(
                 orgCase.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
+                  color: textDark,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
-              
-              // Description
               Text(
                 orgCase.description,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: textMedium,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              
-              // Rejection Reason (if rejected)
               if (orgCase.isRejected && orgCase.rejectionReason != null) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.withAlpha(20),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withAlpha(100)),
+                    color: Colors.red.withAlpha(15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.withAlpha(30), width: 1),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
                         Icons.info_outline,
-                        color: Colors.red[700],
+                        color: Colors.red,
                         size: 18,
                       ),
                       const SizedBox(width: 8),
@@ -296,8 +404,8 @@ class _OrgCasesViewState extends State<OrgCasesView> {
                             Text(
                               'سبب الرفض:',
                               style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red[700],
+                                fontWeight: FontWeight.w700,
+                                color: Colors.red,
                                 fontSize: 13,
                               ),
                             ),
@@ -305,7 +413,7 @@ class _OrgCasesViewState extends State<OrgCasesView> {
                             Text(
                               orgCase.rejectionReason!,
                               style: TextStyle(
-                                color: Colors.red[700],
+                                color: Colors.red,
                                 fontSize: 13,
                               ),
                             ),
@@ -316,32 +424,29 @@ class _OrgCasesViewState extends State<OrgCasesView> {
                   ),
                 ),
               ],
-              
               const SizedBox(height: 12),
               const Divider(),
-              
-              // Footer Info
               Row(
                 children: [
-                  Icon(Icons.location_on_outlined, 
-                      size: 16, color: Colors.grey[500]),
+                  Icon(Icons.location_on_outlined,
+                      size: 16, color: textLight),
                   const SizedBox(width: 4),
                   Text(
                     orgCase.governorate,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.grey[600],
+                      color: textMedium,
                     ),
                   ),
                   const SizedBox(width: 16),
-                  Icon(Icons.category_outlined, 
-                      size: 16, color: Colors.grey[500]),
+                  Icon(Icons.category_outlined,
+                      size: 16, color: textLight),
                   const SizedBox(width: 4),
                   Text(
                     orgCase.category,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.grey[600],
+                      color: textMedium,
                     ),
                   ),
                   const Spacer(),
@@ -349,36 +454,34 @@ class _OrgCasesViewState extends State<OrgCasesView> {
                     _formatDate(orgCase.createdAt),
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[500],
+                      color: textLight,
                     ),
                   ),
                 ],
               ),
-              
-              // Stats (if approved)
               if (orgCase.isApproved) ...[
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.remove_red_eye_outlined, 
-                        size: 14, color: Colors.grey[500]),
+                    Icon(Icons.remove_red_eye_outlined,
+                        size: 14, color: textLight),
                     const SizedBox(width: 4),
                     Text(
                       '${orgCase.views}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: textMedium,
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Icon(Icons.favorite_outline, 
-                        size: 14, color: Colors.grey[500]),
+                    Icon(Icons.favorite_outline,
+                        size: 14, color: textLight),
                     const SizedBox(width: 4),
                     Text(
                       '${orgCase.donationsCount}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: textMedium,
                       ),
                     ),
                   ],
@@ -394,7 +497,7 @@ class _OrgCasesViewState extends State<OrgCasesView> {
   Widget _buildStatusBadge(String status) {
     final statusConfig = <String, Map<String, dynamic>>{
       'pending': {'label': 'معلق', 'color': Colors.orange},
-      'approved': {'label': 'مقبول', 'color': Colors.green},
+      'approved': {'label': 'مقبول', 'color': softTeal},
       'rejected': {'label': 'مرفوض', 'color': Colors.red},
     };
 
@@ -404,14 +507,14 @@ class _OrgCasesViewState extends State<OrgCasesView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withAlpha(30),
+        color: color.withAlpha(20),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         config['label'] as String,
         style: TextStyle(
           color: color,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
           fontSize: 12,
         ),
       ),
@@ -422,7 +525,7 @@ class _OrgCasesViewState extends State<OrgCasesView> {
     final priorityConfig = <String, Map<String, dynamic>>{
       'urgent': {'label': 'عاجل', 'color': Colors.red},
       'high': {'label': 'مرتفع', 'color': Colors.orange},
-      'medium': {'label': 'متوسط', 'color': Colors.yellow.shade700},
+      'medium': {'label': 'متوسط', 'color': Colors.amber.shade700},
       'low': {'label': 'منخفض', 'color': Colors.green},
     };
 
@@ -451,18 +554,26 @@ class _OrgCasesViewState extends State<OrgCasesView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.folder_open_outlined,
-            size: 80,
-            color: Colors.grey[300],
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: softBlueTint,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.folder_open_outlined,
+              size: 48,
+              color: friendlyBlue.withAlpha(80),
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
             'لا توجد حالات',
             style: TextStyle(
               fontSize: 18,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
+              color: textDark,
             ),
           ),
           const SizedBox(height: 8),
@@ -470,7 +581,7 @@ class _OrgCasesViewState extends State<OrgCasesView> {
             'اضغط على + لإضافة حالة جديدة',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: textMedium,
             ),
           ),
         ],
@@ -483,28 +594,52 @@ class _OrgCasesViewState extends State<OrgCasesView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.red[300],
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.red.withAlpha(15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.error_outline,
+              size: 40,
+              color: Colors.red.withAlpha(100),
+            ),
           ),
           const SizedBox(height: 16),
           Text(
             message,
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[600],
+              color: textMedium,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
+          const SizedBox(height: 20),
+          GestureDetector(
+            onTap: () {
               context
                   .read<OrgCasesBloc>()
                   .add(FetchOrgCasesEvent(status: _selectedFilter));
             },
-            child: const Text('إعادة المحاولة'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [friendlyBlue, softTeal],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'إعادة المحاولة',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -515,20 +650,52 @@ class _OrgCasesViewState extends State<OrgCasesView> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('تأكيد الحذف'),
+        backgroundColor: cardWhite,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withAlpha(15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.delete_outline, color: Colors.red),
+            ),
+            const SizedBox(width: 12),
+            const Text('تأكيد الحذف'),
+          ],
+        ),
         content: Text('هل أنت متأكد من حذف "${orgCase.title}"؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            child: Text(
+              'إلغاء',
+              style: TextStyle(color: textMedium),
+            ),
           ),
-          TextButton(
-            onPressed: () {
+          GestureDetector(
+            onTap: () {
               Navigator.pop(context);
               context.read<OrgCasesBloc>().add(DeleteCaseEvent(orgCase.id));
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('حذف'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'حذف',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
           ),
         ],
       ),

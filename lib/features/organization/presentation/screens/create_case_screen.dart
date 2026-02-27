@@ -1,6 +1,19 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+
+// Light of Impact - Warm Hopeful Color System
+const Color backgroundOffWhite = Color(0xFFF9FAFB);
+const Color softBlueTint = Color(0xFFF3F8FC);
+const Color friendlyBlue = Color(0xFF1E7ABF);
+const Color softTeal = Color(0xFF3BB3A9);
+const Color textDark = Color(0xFF1F2937);
+const Color textMedium = Color(0xFF6B7280);
+const Color textLight = Color(0xFF9CA3AF);
+const Color cardWhite = Color(0xFFFFFFFF);
+const Color borderLight = Color(0xFFE5E7EB);
+const Color inputFill = Color(0xFFF7FAFC);
 
 class CreateCaseScreen extends StatefulWidget {
   const CreateCaseScreen({super.key});
@@ -51,7 +64,7 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
   final List<Map<String, dynamic>> _priorities = [
     {'value': 'urgent', 'name': 'عاجل', 'color': Colors.red},
     {'value': 'high', 'name': 'مرتفع', 'color': Colors.orange},
-    {'value': 'medium', 'name': 'متوسط', 'color': Colors.yellow.shade700},
+    {'value': 'medium', 'name': 'متوسط', 'color': Colors.amber.shade700},
     {'value': 'low', 'name': 'منخفض', 'color': Colors.green},
   ];
 
@@ -89,12 +102,7 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCategory == null || _selectedGovernorate == null || _selectedPriority == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('يرجى اختيار القسم والمحافظة والأولوية'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnackBar('يرجى اختيار القسم والمحافظة والأولوية', Colors.orange);
       return;
     }
 
@@ -105,80 +113,153 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
     setState(() => _isLoading = false);
     
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تم إنشاء الحالة بنجاح!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      _showSnackBar('تم إنشاء الحالة بنجاح!', softTeal);
       Navigator.pop(context);
     }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(12),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: backgroundOffWhite,
       appBar: AppBar(
-        title: const Text('إضافة حالة جديدة'),
+        backgroundColor: backgroundOffWhite,
+        elevation: 0,
+        title: Text(
+          'إضافة حالة جديدة',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: textDark,
+          ),
+        ),
         centerTitle: true,
+        
       ),
       body: Form(
         key: _formKey,
-        child: Stepper(
-          type: StepperType.horizontal,
-          currentStep: _currentStep,
-          onStepContinue: _currentStep == 2 ? _submitForm : _nextStep,
-          onStepCancel: _previousStep,
-          controlsBuilder: (context, details) {
-            return Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : details.onStepContinue,
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(_currentStep == 2 ? 'إنشاء الحالة' : 'التالي'),
-                    ),
-                  ),
-                  if (_currentStep > 0) ...[
-                    const SizedBox(width: 12),
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: friendlyBlue,
+              secondary: softTeal,
+            ),
+          ),
+          child: Stepper(
+            type: StepperType.horizontal,
+            currentStep: _currentStep,
+            onStepContinue: _currentStep == 2 ? _submitForm : _nextStep,
+            onStepCancel: _previousStep,
+            controlsBuilder: (context, details) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 24),
+                child: Row(
+                  children: [
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: details.onStepCancel,
-                        child: const Text('السابق'),
+                      child: GestureDetector(
+                        onTap: _isLoading ? null : details.onStepContinue,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [friendlyBlue, softTeal],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: friendlyBlue.withAlpha(30),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : Text(
+                                    _currentStep == 2 ? 'إنشاء الحالة' : 'التالي',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                          ),
+                        ),
                       ),
                     ),
+                    if (_currentStep > 0) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: details.onStepCancel,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: cardWhite,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: borderLight, width: 1),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'السابق',
+                                style: TextStyle(
+                                  color: textMedium,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
+              );
+            },
+            steps: [
+              Step(
+                title: const Text('المعلومات'),
+                isActive: _currentStep >= 0,
+                state: _currentStep > 0 ? StepState.complete : StepState.indexed,
+                content: _buildBasicInfoStep(),
               ),
-            );
-          },
-          steps: [
-            Step(
-              title: const Text('المعلومات'),
-              isActive: _currentStep >= 0,
-              state: _currentStep > 0 ? StepState.complete : StepState.indexed,
-              content: _buildBasicInfoStep(),
-            ),
-            Step(
-              title: const Text('التصنيف'),
-              isActive: _currentStep >= 1,
-              state: _currentStep > 1 ? StepState.complete : StepState.indexed,
-              content: _buildClassificationStep(),
-            ),
-            Step(
-              title: const Text('الصور'),
-              isActive: _currentStep >= 2,
-              state: _currentStep == 2 ? StepState.indexed : StepState.indexed,
-              content: _buildImagesStep(),
-            ),
-          ],
+              Step(
+                title: const Text('التصنيف'),
+                isActive: _currentStep >= 1,
+                state: _currentStep > 1 ? StepState.complete : StepState.indexed,
+                content: _buildClassificationStep(),
+              ),
+              Step(
+                title: const Text('الصور'),
+                isActive: _currentStep >= 2,
+                state: _currentStep == 2 ? StepState.indexed : StepState.indexed,
+                content: _buildImagesStep(),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -189,13 +270,11 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextFormField(
+          _buildTextField(
             controller: _titleController,
-            decoration: const InputDecoration(
-              labelText: 'عنوان الحالة *',
-              hintText: 'مثال: مساعدة عاجلة لعائلة متضررة',
-              prefixIcon: Icon(Icons.title),
-            ),
+            label: 'عنوان الحالة *',
+            hint: 'مثال: مساعدة عاجلة لعائلة متضررة',
+            icon: Icons.title_outlined,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'يرجى إدخال عنوان الحالة';
@@ -207,16 +286,12 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
             },
           ),
           const SizedBox(height: 20),
-          TextFormField(
+          _buildTextField(
             controller: _descriptionController,
-            decoration: const InputDecoration(
-              labelText: 'وصف الحالة *',
-              hintText: 'صف الحالة بالتفصيل...',
-              prefixIcon: Icon(Icons.description),
-              alignLabelWithHint: true,
-            ),
+            label: 'وصف الحالة *',
+            hint: 'صف الحالة بالتفصيل...',
+            icon: Icons.description_outlined,
             maxLines: 6,
-            minLines: 4,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'يرجى إدخال وصف الحالة';
@@ -227,10 +302,14 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 20),
-          const Text(
+          const SizedBox(height: 24),
+          Text(
             'مستوى الأولوية *',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: textDark,
+            ),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -238,18 +317,37 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
             runSpacing: 8,
             children: _priorities.map((priority) {
               final isSelected = _selectedPriority == priority['value'];
-              return ChoiceChip(
-                label: Text(priority['name'] as String),
-                selected: isSelected,
-                onSelected: (selected) {
+              return GestureDetector(
+                onTap: () {
                   setState(() {
-                    _selectedPriority = selected ? priority['value'] as String : null;
+                    _selectedPriority = isSelected ? null : priority['value'] as String;
                   });
                 },
-                selectedColor: (priority['color'] as Color).withAlpha(30),
-                labelStyle: TextStyle(
-                  color: isSelected ? priority['color'] as Color : Colors.grey[700],
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? (priority['color'] as Color).withAlpha(20)
+                        : cardWhite,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? priority['color'] as Color
+                          : borderLight,
+                      width: isSelected ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Text(
+                    priority['name'] as String,
+                    style: TextStyle(
+                      color: isSelected
+                          ? priority['color'] as Color
+                          : textMedium,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               );
             }).toList(),
@@ -259,61 +357,146 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
     );
   }
 
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    required String? Function(String?) validator,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: textDark,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          validator: validator,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: textLight, fontSize: 14),
+            prefixIcon: Icon(icon, color: friendlyBlue, size: 20),
+            filled: true,
+            fillColor: inputFill,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: borderLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: borderLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: friendlyBlue, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildClassificationStep() {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'القسم *',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: textDark,
+            ),
           ),
           const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              leading: const Icon(Icons.category),
-              title: Text(
-                _selectedCategory != null
-                    ? _categories.firstWhere((c) => c['id'] == _selectedCategory)['name']
-                    : 'اختر القسم',
-                style: TextStyle(
-                  color: _selectedCategory != null ? Colors.black : Colors.grey,
-                ),
-              ),
-              trailing: const Icon(Icons.arrow_drop_down),
-              onTap: () => _showCategoryPicker(),
-            ),
+          _buildSelectionCard(
+            icon: Icons.category_outlined,
+            title: _selectedCategory != null
+                ? _categories.firstWhere((c) => c['id'] == _selectedCategory)['name']
+                : 'اختر القسم',
+            isSelected: _selectedCategory != null,
+            onTap: () => _showCategoryPicker(),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'المحافظة *',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: textDark,
+            ),
           ),
           const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              leading: const Icon(Icons.location_on),
-              title: Text(
-                _selectedGovernorate != null
-                    ? _governorates.firstWhere((g) => g['id'] == _selectedGovernorate)['name']
-                    : 'اختر المحافظة',
-                style: TextStyle(
-                  color: _selectedGovernorate != null ? Colors.black : Colors.grey,
-                ),
-              ),
-              trailing: const Icon(Icons.arrow_drop_down),
-              onTap: () => _showGovernoratePicker(),
-            ),
+          _buildSelectionCard(
+            icon: Icons.location_on_outlined,
+            title: _selectedGovernorate != null
+                ? _governorates.firstWhere((g) => g['id'] == _selectedGovernorate)['name']
+                : 'اختر المحافظة',
+            isSelected: _selectedGovernorate != null,
+            onTap: () => _showGovernoratePicker(),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSelectionCard({
+    required IconData icon,
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cardWhite,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? friendlyBlue : borderLight,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? friendlyBlue : textLight, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: isSelected ? textDark : textLight,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: isSelected ? friendlyBlue : textLight,
+              size: 16,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -326,18 +509,28 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.amber.withAlpha(20),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.amber.withAlpha(100)),
+              color: softTeal.withAlpha(20),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: softTeal.withAlpha(50), width: 1),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.photo_camera, color: Colors.orange),
-                SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: softTeal.withAlpha(30),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.photo_camera_outlined, color: softTeal, size: 22),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'أضف صور توضح الحالة. الصور تزيد من فرصة قبول الحالة وتحفز المتبرعين.',
-                    style: TextStyle(color: Colors.orange),
+                    style: TextStyle(
+                      color: textMedium,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
@@ -345,31 +538,49 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
           ),
           const SizedBox(height: 20),
           if (_selectedImages.length < 5)
-            InkWell(
+            GestureDetector(
               onTap: _pickImages,
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
-                  borderRadius: BorderRadius.circular(12),
+                  color: softBlueTint,
+                  border: Border.all(color: friendlyBlue.withAlpha(30), style: BorderStyle.solid),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   children: [
-                    Icon(
-                      Icons.add_photo_alternate,
-                      size: 48,
-                      color: Colors.grey[400],
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: cardWhite,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: friendlyBlue.withAlpha(20),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.add_photo_alternate_outlined,
+                        size: 32,
+                        color: friendlyBlue,
+                      ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Text(
                       'اضغط لإضافة صور',
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: TextStyle(
+                        color: textDark,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'الحد الأقصى 5 صور',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      style: TextStyle(color: textMedium, fontSize: 12),
                     ),
                   ],
                 ),
@@ -412,7 +623,7 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
                           child: const Icon(
                             Icons.close,
                             color: Colors.white,
-                            size: 16,
+                            size: 14,
                           ),
                         ),
                       ),
@@ -429,22 +640,36 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
   void _showCategoryPicker() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: cardWhite,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
-                child: const Text(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Text(
                   'اختر القسم',
                   style: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
+                    color: textDark,
                   ),
                 ),
               ),
-              const Divider(height: 1),
+              Divider(color: borderLight, height: 1),
               Expanded(
                 child: ListView.builder(
                   itemCount: _categories.length,
@@ -452,11 +677,25 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
                     final category = _categories[index];
                     final isSelected = _selectedCategory == category['id'];
                     return ListTile(
-                      leading: Icon(
-                        isSelected ? Icons.check_circle : Icons.circle_outlined,
-                        color: isSelected ? Theme.of(context).primaryColor : Colors.grey,
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? friendlyBlue.withAlpha(20) : softBlueTint,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          isSelected ? Icons.check_circle : Icons.circle_outlined,
+                          color: isSelected ? friendlyBlue : textLight,
+                          size: 20,
+                        ),
                       ),
-                      title: Text(category['name'] as String),
+                      title: Text(
+                        category['name'] as String,
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: textDark,
+                        ),
+                      ),
                       onTap: () {
                         setState(() {
                           _selectedCategory = category['id'] as int;
@@ -477,22 +716,36 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
   void _showGovernoratePicker() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: cardWhite,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
-                child: const Text(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Text(
                   'اختر المحافظة',
                   style: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
+                    color: textDark,
                   ),
                 ),
               ),
-              const Divider(height: 1),
+              Divider(color: borderLight, height: 1),
               Expanded(
                 child: ListView.builder(
                   itemCount: _governorates.length,
@@ -500,11 +753,25 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
                     final governorate = _governorates[index];
                     final isSelected = _selectedGovernorate == governorate['id'];
                     return ListTile(
-                      leading: Icon(
-                        isSelected ? Icons.check_circle : Icons.circle_outlined,
-                        color: isSelected ? Theme.of(context).primaryColor : Colors.grey,
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? friendlyBlue.withAlpha(20) : softBlueTint,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          isSelected ? Icons.check_circle : Icons.circle_outlined,
+                          color: isSelected ? friendlyBlue : textLight,
+                          size: 20,
+                        ),
                       ),
-                      title: Text(governorate['name'] as String),
+                      title: Text(
+                        governorate['name'] as String,
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: textDark,
+                        ),
+                      ),
                       onTap: () {
                         setState(() {
                           _selectedGovernorate = governorate['id'] as int;

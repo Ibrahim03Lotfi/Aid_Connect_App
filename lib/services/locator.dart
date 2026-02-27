@@ -4,6 +4,8 @@ import '../core/network/dio_client.dart';
 import '../features/auth/data/repositories/auth_repository_impl.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
+import '../features/notifications/data/repositories/notification_repository_impl.dart';
+import '../features/notifications/domain/repositories/notification_repository.dart';
 import '../features/user/data/repositories/user_repository_impl.dart';
 import '../features/user/domain/repositories/user_repository.dart';
 import '../features/user/presentation/bloc/case_details_bloc/case_details_bloc.dart';
@@ -16,6 +18,7 @@ import '../features/organization/presentation/bloc/org_cases_bloc/org_cases_bloc
 import '../features/volunteer/data/repositories/volunteer_repository_impl.dart';
 import '../features/volunteer/domain/repositories/volunteer_repository.dart';
 import 'local_storage_service.dart';
+import 'notification_service.dart';
 
 final GetIt locator = GetIt.instance;
 
@@ -27,6 +30,10 @@ Future<void> setupLocator() async {
   // Services
   locator.registerLazySingleton<LocalStorageService>(
     () => LocalStorageService(locator<SharedPreferences>()),
+  );
+
+  locator.registerLazySingleton<NotificationService>(
+    () => NotificationService(),
   );
 
   // Dio Client (needs LocalStorageService for token)
@@ -52,6 +59,10 @@ Future<void> setupLocator() async {
 
   locator.registerLazySingleton<VolunteerRepository>(
     () => VolunteerRepositoryImpl(),
+  );
+
+  locator.registerLazySingleton<NotificationRepository>(
+    () => NotificationRepositoryImpl(locator<LocalStorageService>()),
   );
 
   // BLoCs

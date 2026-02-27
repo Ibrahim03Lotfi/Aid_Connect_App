@@ -4,6 +4,16 @@ import 'org_cases_screen.dart';
 import 'create_case_screen.dart';
 import 'org_profile_screen.dart';
 
+// Light of Impact - Warm Hopeful Color System
+const Color backgroundOffWhite = Color(0xFFF9FAFB);
+const Color softBlueTint = Color(0xFFF3F8FC);
+const Color friendlyBlue = Color(0xFF1E7ABF);
+const Color softTeal = Color(0xFF3BB3A9);
+const Color textDark = Color(0xFF1F2937);
+const Color textMedium = Color(0xFF6B7280);
+const Color cardWhite = Color(0xFFFFFFFF);
+const Color borderLight = Color(0xFFE5E7EB);
+
 class OrgMainScreen extends StatefulWidget {
   const OrgMainScreen({super.key});
 
@@ -47,21 +57,26 @@ class _OrgMainScreenState extends State<OrgMainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: backgroundOffWhite,
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardWhite,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(20),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+              color: friendlyBlue.withAlpha(15),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
             ),
           ],
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(_navItems.length, (index) {
@@ -74,9 +89,13 @@ class _OrgMainScreenState extends State<OrgMainScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Theme.of(context).primaryColor.withAlpha(20)
+                          ? friendlyBlue.withAlpha(15)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? friendlyBlue.withAlpha(30) : Colors.transparent,
+                        width: 1,
+                      ),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -84,8 +103,8 @@ class _OrgMainScreenState extends State<OrgMainScreen> {
                         Icon(
                           isSelected ? item['activeIcon'] : item['icon'],
                           color: isSelected
-                              ? Theme.of(context).primaryColor
-                              : Colors.grey[500],
+                              ? friendlyBlue
+                              : textMedium,
                           size: 24,
                         ),
                         const SizedBox(height: 4),
@@ -95,8 +114,8 @@ class _OrgMainScreenState extends State<OrgMainScreen> {
                             fontSize: 12,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: isSelected
-                                ? Theme.of(context).primaryColor
-                                : Colors.grey[500],
+                                ? friendlyBlue
+                                : textMedium,
                           ),
                         ),
                       ],

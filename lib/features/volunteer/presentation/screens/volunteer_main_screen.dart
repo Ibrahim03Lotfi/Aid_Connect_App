@@ -4,6 +4,17 @@ import 'volunteer_available_cases_screen.dart';
 import 'volunteer_my_cases_screen.dart';
 import 'volunteer_profile_screen.dart';
 
+// Light of Impact - Warm Hopeful Color System
+const Color backgroundOffWhite = Color(0xFFF9FAFB);
+const Color softBlueTint = Color(0xFFF3F8FC);
+const Color friendlyBlue = Color(0xFF1E7ABF);
+const Color softTeal = Color(0xFF3BB3A9);
+const Color textDark = Color(0xFF1F2937);
+const Color textMedium = Color(0xFF6B7280);
+const Color textLight = Color(0xFF9CA3AF);
+const Color cardWhite = Color(0xFFFFFFFF);
+const Color borderLight = Color(0xFFE5E7EB);
+
 class VolunteerMainScreen extends StatefulWidget {
   const VolunteerMainScreen({super.key});
 
@@ -24,22 +35,22 @@ class _VolunteerMainScreenState extends State<VolunteerMainScreen> {
   final List<Map<String, dynamic>> _navItems = const [
     {
       'icon': Icons.home_outlined,
-      'activeIcon': Icons.home,
+      'activeIcon': Icons.home_rounded,
       'label': 'الرئيسية',
     },
     {
       'icon': Icons.search_outlined,
-      'activeIcon': Icons.search,
+      'activeIcon': Icons.search_rounded,
       'label': 'البحث',
     },
     {
       'icon': Icons.assignment_outlined,
-      'activeIcon': Icons.assignment,
+      'activeIcon': Icons.assignment_rounded,
       'label': 'طلباتي',
     },
     {
       'icon': Icons.person_outlined,
-      'activeIcon': Icons.person,
+      'activeIcon': Icons.person_rounded,
       'label': 'الملف',
     },
   ];
@@ -47,21 +58,26 @@ class _VolunteerMainScreenState extends State<VolunteerMainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: backgroundOffWhite,
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardWhite,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(20),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+              color: friendlyBlue.withAlpha(15),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
             ),
           ],
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(_navItems.length, (index) {
@@ -74,9 +90,12 @@ class _VolunteerMainScreenState extends State<VolunteerMainScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Theme.of(context).primaryColor.withAlpha(20)
+                          ? friendlyBlue.withAlpha(15)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
+                      border: isSelected
+                          ? Border.all(color: friendlyBlue.withAlpha(50), width: 1)
+                          : null,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -84,8 +103,8 @@ class _VolunteerMainScreenState extends State<VolunteerMainScreen> {
                         Icon(
                           isSelected ? item['activeIcon'] : item['icon'],
                           color: isSelected
-                              ? Theme.of(context).primaryColor
-                              : Colors.grey[500],
+                              ? friendlyBlue
+                              : textMedium,
                           size: 24,
                         ),
                         const SizedBox(height: 4),
@@ -95,8 +114,8 @@ class _VolunteerMainScreenState extends State<VolunteerMainScreen> {
                             fontSize: 12,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: isSelected
-                                ? Theme.of(context).primaryColor
-                                : Colors.grey[500],
+                                ? friendlyBlue
+                                : textMedium,
                           ),
                         ),
                       ],

@@ -8,6 +8,17 @@ import '../bloc/governorate_bloc/governorate_bloc.dart';
 import '../bloc/governorate_bloc/governorate_event.dart';
 import '../bloc/governorate_bloc/governorate_state.dart';
 
+// Light of Impact - Warm Hopeful Color System
+const Color backgroundOffWhite = Color(0xFFF9FAFB);
+const Color softBlueTint = Color(0xFFF3F8FC);
+const Color friendlyBlue = Color(0xFF1E7ABF);
+const Color softTeal = Color(0xFF3BB3A9);
+const Color textDark = Color(0xFF1F2937);
+const Color textMedium = Color(0xFF6B7280);
+const Color textLight = Color(0xFF9CA3AF);
+const Color cardWhite = Color(0xFFFFFFFF);
+const Color borderLight = Color(0xFFE5E7EB);
+
 class GovernoratesScreen extends StatelessWidget {
   final int? categoryId;
 
@@ -31,34 +42,29 @@ class GovernoratesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: backgroundOffWhite,
       appBar: AppBar(
-        title: const Text('المحافظات'),
+        backgroundColor: backgroundOffWhite,
+        elevation: 0,
+        title: Text(
+          'المحافظات',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: textDark,
+          ),
+        ),
         centerTitle: true,
+        
       ),
       body: BlocBuilder<GovernorateBloc, GovernorateState>(
         builder: (context, state) {
           if (state is GovernorateLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return _buildLoadingView();
           }
 
           if (state is GovernorateError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(state.message),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      context
-                          .read<GovernorateBloc>()
-                          .add(const RefreshGovernorateDataEvent());
-                    },
-                    child: const Text('إعادة المحاولة'),
-                  ),
-                ],
-              ),
-            );
+            return _buildErrorView(state.message, context);
           }
 
           if (state is GovernorateLoaded || state is CasesLoadingMore) {
@@ -79,16 +85,32 @@ class GovernoratesView extends StatelessWidget {
 
             return Column(
               children: [
+                // Governorates Horizontal List
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                  decoration: BoxDecoration(
+                    color: cardWhite,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(24),
+                      bottomRight: Radius.circular(24),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: friendlyBlue.withAlpha(10),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'اختر المحافظة',
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
+                          color: textDark,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -116,15 +138,13 @@ class GovernoratesView extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Divider(),
+                // Cases List
                 if (govState.selectedGovernorateId != null)
                   Expanded(
                     child: govState.cases.isEmpty
-                        ? const Center(
-                            child: Text('لا توجد حالات في هذه المحافظة'),
-                          )
+                        ? _buildEmptyState()
                         : ListView.builder(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(20),
                             itemCount: govState.cases.length +
                                 (state is CasesLoadingMore ? 1 : 0) +
                                 (govState.hasMoreCases &&
@@ -145,22 +165,43 @@ class GovernoratesView extends StatelessWidget {
                                   },
                                 );
                               } else if (state is CasesLoadingMore) {
-                                return const Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                );
+                                return const _LinearLoadingIndicator();
                               } else if (govState.hasMoreCases) {
                                 return Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: ElevatedButton(
-                                    onPressed: () {
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  child: GestureDetector(
+                                    onTap: () {
                                       context.read<GovernorateBloc>().add(
                                             const FetchMoreCasesEvent(),
                                           );
                                     },
-                                    child: const Text('تحميل المزيد'),
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [friendlyBlue, softTeal],
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: friendlyBlue.withAlpha(30),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Center(
+                                        child: Text(
+                                          'تحميل المزيد',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 );
                               }
@@ -169,13 +210,8 @@ class GovernoratesView extends StatelessWidget {
                           ),
                   )
                 else
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'اختر محافظة لعرض الحالات',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ),
+                  Expanded(
+                    child: _buildSelectPrompt(),
                   ),
               ],
             );
@@ -183,6 +219,182 @@ class GovernoratesView extends StatelessWidget {
 
           return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+
+  Widget _buildLoadingView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: cardWhite,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: friendlyBlue.withAlpha(20),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(friendlyBlue),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'جاري التحميل...',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: textMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorView(String message, BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.red.withAlpha(15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: textDark,
+              ),
+            ),
+            const SizedBox(height: 24),
+            GestureDetector(
+              onTap: () {
+                context.read<GovernorateBloc>().add(
+                  const RefreshGovernorateDataEvent(),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [friendlyBlue, softTeal],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: friendlyBlue.withAlpha(30),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Text(
+                  'إعادة المحاولة',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: softBlueTint,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.inbox_outlined,
+              color: textLight,
+              size: 48,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'لا توجد حالات في هذه المحافظة',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: textMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectPrompt() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: softBlueTint,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.location_on_outlined,
+              color: friendlyBlue.withAlpha(80),
+              size: 48,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'اختر محافظة لعرض الحالات',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: textMedium,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -203,33 +415,65 @@ class _GovernorateChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 100,
-        margin: const EdgeInsets.only(left: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        width: 90,
+        margin: const EdgeInsets.only(left: 10),
         decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).primaryColor
-              : Theme.of(context).primaryColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [friendlyBlue, softTeal],
+                )
+              : null,
+          color: isSelected ? null : cardWhite,
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected
+              ? null
+              : Border.all(color: borderLight, width: 1),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: friendlyBlue.withAlpha(40),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: friendlyBlue.withAlpha(8),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.location_on,
-              color: isSelected ? Colors.white : Theme.of(context).primaryColor,
-              size: 28,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withAlpha(30)
+                    : friendlyBlue.withAlpha(15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.location_on_outlined,
+                color: isSelected ? Colors.white : friendlyBlue,
+                size: 22,
+              ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               governorate.name,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : Colors.black87,
+                color: isSelected ? Colors.white : textDark,
               ),
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
@@ -237,7 +481,7 @@ class _GovernorateChip extends StatelessWidget {
               '${governorate.casesCount} حالة',
               style: TextStyle(
                 fontSize: 10,
-                color: isSelected ? Colors.white70 : Colors.grey[600],
+                color: isSelected ? Colors.white.withAlpha(85) : textMedium,
               ),
             ),
           ],
@@ -260,26 +504,38 @@ class _CaseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Card(
+      child: Container(
         margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: cardWhite,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderLight, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: friendlyBlue.withAlpha(10),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 child: caseItem.thumbnail != null
                     ? Image.network(
                         caseItem.thumbnail!,
-                        width: 70,
-                        height: 70,
+                        width: 72,
+                        height: 72,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => _buildPlaceholder(),
                       )
                     : _buildPlaceholder(),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,60 +544,86 @@ class _CaseCard extends StatelessWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                            horizontal: 8,
+                            vertical: 3,
                           ),
                           decoration: BoxDecoration(
                             color: _getPriorityColor(caseItem.priority)
-                                .withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
+                                .withAlpha(20),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             _getPriorityText(caseItem.priority),
                             style: TextStyle(
                               fontSize: 10,
                               color: _getPriorityColor(caseItem.priority),
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(Icons.remove_red_eye, size: 14, color: Colors.grey[600]),
+                        Icon(
+                          Icons.remove_red_eye_outlined,
+                          size: 14,
+                          color: textMedium,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${caseItem.views}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: textMedium,
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       caseItem.title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: textDark,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      caseItem.category,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.folder_outlined,
+                          size: 14,
+                          color: textLight,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          caseItem.category,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: textMedium,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              IconButton(
-                icon: Icon(
-                  caseItem.isFavorited ? Icons.favorite : Icons.favorite_border,
-                  color: caseItem.isFavorited ? Colors.red : Colors.grey,
-                  size: 20,
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: caseItem.isFavorited
+                      ? Colors.red.withAlpha(15)
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
                 ),
-                onPressed: () {},
+                child: Icon(
+                  caseItem.isFavorited
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_outline,
+                  color: caseItem.isFavorited ? Colors.red : textLight,
+                  size: 22,
+                ),
               ),
             ],
           ),
@@ -352,10 +634,13 @@ class _CaseCard extends StatelessWidget {
 
   Widget _buildPlaceholder() {
     return Container(
-      width: 70,
-      height: 70,
-      color: Colors.grey[300],
-      child: const Icon(Icons.image, color: Colors.grey, size: 30),
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: softBlueTint,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(Icons.image_outlined, color: textLight, size: 28),
     );
   }
 
@@ -366,7 +651,7 @@ class _CaseCard extends StatelessWidget {
       case 'high':
         return Colors.orange;
       case 'medium':
-        return Colors.yellow.shade700;
+        return Colors.amber.shade700;
       default:
         return Colors.green;
     }
@@ -383,5 +668,34 @@ class _CaseCard extends StatelessWidget {
       default:
         return 'عادي';
     }
+  }
+}
+
+class _LinearLoadingIndicator extends StatelessWidget {
+  const _LinearLoadingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: Container(
+          width: 200,
+          height: 4,
+          decoration: BoxDecoration(
+            color: borderLight,
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: LinearProgressIndicator(
+              backgroundColor: borderLight,
+              valueColor: const AlwaysStoppedAnimation<Color>(friendlyBlue),
+              minHeight: 4,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
