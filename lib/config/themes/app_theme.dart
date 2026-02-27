@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   static const Color primary = Color(0xFF1E7ABF);
@@ -40,15 +41,14 @@ class AppTheme {
         onSurface: AppColors.textPrimary,
         onError: Colors.white,
       ),
-      fontFamily: 'Cairo',
-      appBarTheme: const AppBarTheme(
+      fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
+      appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         systemOverlayStyle: SystemUiOverlayStyle.light,
-        titleTextStyle: TextStyle(
-          fontFamily: 'Cairo',
+        titleTextStyle: GoogleFonts.ibmPlexSansArabic(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: Colors.white,
@@ -85,10 +85,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.error, width: 2),
         ),
-        hintStyle: const TextStyle(
-          fontFamily: 'Cairo',
+        hintStyle: GoogleFonts.ibmPlexSansArabic(
           color: AppColors.textHint,
           fontSize: 14,
+          fontWeight: FontWeight.w400,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -100,8 +100,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
-            fontFamily: 'Cairo',
+          textStyle: TextStyle(
+            fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -110,8 +110,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
-          textStyle: const TextStyle(
-            fontFamily: 'Cairo',
+          textStyle: GoogleFonts.ibmPlexSansArabic(
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -124,114 +123,114 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
-            fontFamily: 'Cairo',
+          textStyle: TextStyle(
+            fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
         ),
       ),
-      textTheme: const TextTheme(
+      textTheme: TextTheme(
         displayLarge: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 40,
           fontWeight: FontWeight.w900,
           letterSpacing: -0.5,
           color: AppColors.textPrimary,
         ),
         displayMedium: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 36,
           fontWeight: FontWeight.w900,
           letterSpacing: -0.5,
           color: AppColors.textPrimary,
         ),
         displaySmall: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 30,
           fontWeight: FontWeight.w900,
           letterSpacing: -0.5,
           color: AppColors.textPrimary,
         ),
         headlineLarge: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 26,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.3,
           color: AppColors.textPrimary,
         ),
         headlineMedium: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 24,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.3,
           color: AppColors.textPrimary,
         ),
         headlineSmall: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 22,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.3,
           color: AppColors.textPrimary,
         ),
         titleLarge: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 18,
           fontWeight: FontWeight.w700,
           letterSpacing: 0,
           color: AppColors.textPrimary,
         ),
         titleMedium: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 16,
           fontWeight: FontWeight.w700,
           letterSpacing: 0,
           color: AppColors.textPrimary,
         ),
         titleSmall: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 14,
           fontWeight: FontWeight.w700,
           letterSpacing: 0,
           color: AppColors.textPrimary,
         ),
         bodyLarge: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 18,
           fontWeight: FontWeight.w600,
           letterSpacing: 0,
           color: AppColors.textPrimary,
         ),
         bodyMedium: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 16,
           fontWeight: FontWeight.w600,
           letterSpacing: 0,
           color: AppColors.textPrimary,
         ),
         bodySmall: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 14,
           fontWeight: FontWeight.w600,
           letterSpacing: 0,
           color: AppColors.textSecondary,
         ),
         labelLarge: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 16,
           fontWeight: FontWeight.w700,
           letterSpacing: 0,
           color: AppColors.textPrimary,
         ),
         labelMedium: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 14,
           fontWeight: FontWeight.w700,
           letterSpacing: 0,
           color: AppColors.textSecondary,
         ),
         labelSmall: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
           fontSize: 12,
           fontWeight: FontWeight.w700,
           letterSpacing: 0,

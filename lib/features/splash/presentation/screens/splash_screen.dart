@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../config/routes/app_routes.dart';
 
+// Professional Color System - Same as login screen
+const Color primaryBlue = Color(0xFF1B365D);
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -64,14 +67,14 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Theme.of(context).primaryColor,
-              Theme.of(context).primaryColor.withAlpha(230),
-              const Color(0xFF4A9BD4),
+              primaryBlue,
+              Color(0xFF2F5D8C),
+              Color(0xFF4A9BD4),
             ],
           ),
         ),
@@ -99,10 +102,10 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ],
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.volunteer_activism,
                           size: 60,
-                          color: Theme.of(context).primaryColor,
+                          color: primaryBlue,
                         ),
                       ),
                     );
