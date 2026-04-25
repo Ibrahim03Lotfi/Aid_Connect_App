@@ -41,12 +41,20 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
 
   final List<String> _governorates = [
     'الكل',
-    'القاهرة',
-    'الإسكندرية',
-    'الجيزة',
-    'المنصورة',
-    'أسوان',
-    'الأقصر',
+    'دمشق',
+    'حلب',
+    'حمص',
+    'حماة',
+    'اللاذقية',
+    'طرطوس',
+    'درعا',
+    'السويداء',
+    'دير الزور',
+    'الرقة',
+    'الحسكة',
+    'إدلب',
+    'القنيطرة',
+    'ريف دمشق',
   ];
 
   @override

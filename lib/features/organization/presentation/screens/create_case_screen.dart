@@ -49,16 +49,20 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
   ];
   
   final List<Map<String, dynamic>> _governorates = [
-    {'id': 1, 'name': 'القاهرة'},
-    {'id': 2, 'name': 'الإسكندرية'},
-    {'id': 3, 'name': 'الجيزة'},
-    {'id': 4, 'name': 'القليوبية'},
-    {'id': 5, 'name': 'المنصورة'},
-    {'id': 6, 'name': 'أسوان'},
-    {'id': 7, 'name': 'الأقصر'},
-    {'id': 8, 'name': 'بورسعيد'},
-    {'id': 9, 'name': 'الإسماعيلية'},
-    {'id': 10, 'name': 'السويس'},
+    {'id': 1, 'name': 'دمشق'},
+    {'id': 2, 'name': 'حلب'},
+    {'id': 3, 'name': 'حمص'},
+    {'id': 4, 'name': 'حماة'},
+    {'id': 5, 'name': 'اللاذقية'},
+    {'id': 6, 'name': 'طرطوس'},
+    {'id': 7, 'name': 'درعا'},
+    {'id': 8, 'name': 'السويداء'},
+    {'id': 9, 'name': 'دير الزور'},
+    {'id': 10, 'name': 'الرقة'},
+    {'id': 11, 'name': 'الحسكة'},
+    {'id': 12, 'name': 'إدلب'},
+    {'id': 13, 'name': 'القنيطرة'},
+    {'id': 14, 'name': 'ريف دمشق'},
   ];
   
   final List<Map<String, dynamic>> _priorities = [

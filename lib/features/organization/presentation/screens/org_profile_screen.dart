@@ -29,7 +29,7 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
     'name': 'منظمة الخير للإغاثة',
     'email': 'info@khair-org.org',
     'phone': '01234567890',
-    'address': 'شارع النصر، مدينة نصر، القاهرة',
+    'address': 'شارع الفيحاء، دمشق، سوريا',
     'registrationNumber': '123456789',
     'description': 'منظمة خيرية متخصصة في تقديم المساعدات العاجلة والإغاثة للأسر المحتاجة',
     'website': 'www.khair-org.org',
