@@ -10,6 +10,10 @@ class VolunteerController extends ApiController
 {
     public function availableCases(Request $request)
     {
+        if ($request->user()->role !== 'volunteer') {
+            return $this->errorResponse('Only volunteers can access this endpoint', 403);
+        }
+
         $query = VolunteerOpportunity::with('organization')
             ->where('status', 'active');
 
@@ -42,8 +46,12 @@ class VolunteerController extends ApiController
         return $this->paginatedResponse($data, $opportunities);
     }
 
-    public function showCase($id)
+    public function showCase(Request $request, $id)
     {
+        if ($request->user()->role !== 'volunteer') {
+            return $this->errorResponse('Only volunteers can access this endpoint', 403);
+        }
+
         $op = VolunteerOpportunity::with('organization')->find($id);
 
         if (! $op) {
@@ -67,6 +75,10 @@ class VolunteerController extends ApiController
 
     public function apply(Request $request, $caseId)
     {
+        if ($request->user()->role !== 'volunteer') {
+            return $this->errorResponse('Only volunteers can access this endpoint', 403);
+        }
+
         $op = VolunteerOpportunity::find($caseId);
 
         if (! $op) {
@@ -88,7 +100,7 @@ class VolunteerController extends ApiController
         VolunteerApplication::create([
             'user_id' => $request->user()->id,
             'opportunity_id' => $caseId,
-            'case_id' => $caseId,
+            'case_id' => null,
             'status' => 'pending',
             'case_title' => $op->title,
             'organization_name' => $op->organization?->name,
@@ -102,6 +114,10 @@ class VolunteerController extends ApiController
 
     public function myApplications(Request $request)
     {
+        if ($request->user()->role !== 'volunteer') {
+            return $this->errorResponse('Only volunteers can access this endpoint', 403);
+        }
+
         $query = VolunteerApplication::where('user_id', $request->user()->id);
 
         if ($request->has('status')) {
@@ -127,6 +143,10 @@ class VolunteerController extends ApiController
 
     public function cancelApplication(Request $request, $id)
     {
+        if ($request->user()->role !== 'volunteer') {
+            return $this->errorResponse('Only volunteers can access this endpoint', 403);
+        }
+
         $application = VolunteerApplication::where('user_id', $request->user()->id)->find($id);
 
         if (! $application) {
@@ -141,6 +161,10 @@ class VolunteerController extends ApiController
 
     public function profile(Request $request)
     {
+        if ($request->user()->role !== 'volunteer') {
+            return $this->errorResponse('Only volunteers can access this endpoint', 403);
+        }
+
         $user = $request->user();
         $completed = VolunteerApplication::where('user_id', $user->id)
             ->where('status', 'completed')
@@ -163,6 +187,10 @@ class VolunteerController extends ApiController
 
     public function updateProfile(Request $request)
     {
+        if ($request->user()->role !== 'volunteer') {
+            return $this->errorResponse('Only volunteers can access this endpoint', 403);
+        }
+
         $user = $request->user();
 
         $validated = $request->validate([

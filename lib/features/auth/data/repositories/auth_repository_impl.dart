@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
-import '../../../../core/network/api_response.dart';
-import '../../../../core/network/dio_client.dart';
+import '../../../../core/network/http_client.dart';
 import '../../../../services/local_storage_service.dart';
 import '../../../../shared/constants/app_constants.dart';
 import '../../domain/entities/user.dart';
@@ -10,13 +9,13 @@ import '../../domain/repositories/auth_repository.dart';
 import '../models/user_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final DioClient _dioClient;
+  final HttpClient _httpClient;
   final LocalStorageService _localStorage;
 
   AuthRepositoryImpl({
-    required DioClient dioClient,
+    required HttpClient httpClient,
     required LocalStorageService localStorage,
-  }) : _dioClient = dioClient,
+  }) : _httpClient = httpClient,
        _localStorage = localStorage;
 
   @override
@@ -26,7 +25,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String role,
   }) async {
     try {
-      final response = await _dioClient.post<Map<String, dynamic>>(
+      final response = await _httpClient.post<Map<String, dynamic>>(
         '/auth/login',
         data: {'email': email, 'password': password, 'role': role},
         fromJsonT: (data) => data as Map<String, dynamic>,
@@ -58,7 +57,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      final response = await _dioClient.post<Map<String, dynamic>>(
+      final response = await _httpClient.post<Map<String, dynamic>>(
         '/auth/register',
         data: {
           'name': name,
@@ -92,7 +91,7 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final token = await _localStorage.getToken();
       if (token != null) {
-        await _dioClient.post('/auth/logout', fromJsonT: (data) => data);
+        await _httpClient.post('/auth/logout', fromJsonT: (data) => data);
       }
       await _localStorage.clearAll();
       return const Right(null);
@@ -111,7 +110,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String registrationNumber,
   }) async {
     try {
-      await _dioClient.post(
+      await _httpClient.post(
         '/organization/request',
         data: {
           'name': name,
@@ -139,7 +138,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Right(null);
       }
 
-      final response = await _dioClient.get<Map<String, dynamic>>(
+      final response = await _httpClient.get<Map<String, dynamic>>(
         '/auth/me',
         fromJsonT: (data) => data as Map<String, dynamic>,
       );

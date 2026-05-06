@@ -1,118 +1,14 @@
-import 'dart:math';
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/network/http_client.dart';
 import '../../domain/entities/volunteer_case.dart';
 import '../../domain/repositories/volunteer_repository.dart';
 
 class VolunteerRepositoryImpl implements VolunteerRepository {
-  // STATIC MOCK DATA - Available Cases
-  final List<VolunteerCase> _availableCases = [
-    VolunteerCase(
-      id: 101,
-      title: 'توزيع سلال غذائية على الأسر المحتاجة',
-      description: 'نحتاج متطوعين لتوزيع 50 سلة غذائية على الأسر المحتاجة في منطقة المزة. المهمة تشمل تحميل السلال من المستودع وتوزيعها على العناوين المحددة.',
-      category: 'مساعدات غذائية',
-      governorate: 'دمشق',
-      priority: 'high',
-      organizationName: 'بنك الطعام المصري',
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      volunteersNeeded: 10,
-      volunteersApplied: 4,
-      isUrgent: true,
-    ),
-    VolunteerCase(
-      id: 102,
-      title: 'مساعدة في حملة تبرع بالدم',
-      description: 'نحتاج متطوعين للتسجيل والتنظيم في حملة التبرع بالدم التي ستقام في مستشفى حلب الجامعي.',
-      category: 'علاج طبي',
-      governorate: 'حلب',
-      priority: 'urgent',
-      organizationName: 'جمعية الهلال الأحمر',
-      createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-      volunteersNeeded: 6,
-      volunteersApplied: 2,
-      isUrgent: true,
-    ),
-    VolunteerCase(
-      id: 103,
-      title: 'تدريس الأطفال المحرومين',
-      description: 'برنامج تعليمي للأطفال في المناطق النائية. نحتاج متطوعين للتدريس في المواد الأساسية (الرياضيات - العربية - الإنجليزية).',
-      category: 'تعليم',
-      governorate: 'حماة',
-      priority: 'medium',
-      organizationName: 'مؤسسة العلم للجميع',
-      createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      volunteersNeeded: 4,
-      volunteersApplied: 1,
-    ),
-    VolunteerCase(
-      id: 104,
-      title: 'إعادة تأهيل منزل عائلة متضررة',
-      description: 'عائلة فقدت منزلها بسبب السيول. نحتاج متطوعين للمساعدة في أعمال البناء والترميم.',
-      category: 'سكن',
-      governorate: 'اللاذقية',
-      priority: 'high',
-      organizationName: 'منظمة الخير للإغاثة',
-      createdAt: DateTime.now().subtract(const Duration(days: 3)),
-      volunteersNeeded: 8,
-      volunteersApplied: 5,
-    ),
-    VolunteerCase(
-      id: 105,
-      title: 'تنظيف شاطئ طرطوس',
-      description: 'حملة تنظيف للشاطئ بالتعاون مع وزارة البيئة. نحتاج متطوعين لجمع المخلفات البلاستيكية.',
-      category: 'بيئة',
-      governorate: 'طرطوس',
-      priority: 'low',
-      organizationName: 'مؤسسة بيئتنا',
-      createdAt: DateTime.now().subtract(const Duration(hours: 12)),
-      volunteersNeeded: 20,
-      volunteersApplied: 8,
-    ),
-    VolunteerCase(
-      id: 106,
-      title: 'زيارة دور المسنين',
-      description: 'زيارة ترفيهية واجتماعية لدور المسنين. نحتاج متطوعين للجلوس مع المسنين والاستماع لهم.',
-      category: 'دعم نفسي',
-      governorate: 'حمص',
-      priority: 'medium',
-      organizationName: 'جمعية رعاية المسنين',
-      createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      volunteersNeeded: 5,
-      volunteersApplied: 3,
-    ),
-  ];
+  final HttpClient _httpClient;
 
-  // STATIC MOCK DATA - My Applications
-  final List<VolunteerApplication> _myApplications = [
-    VolunteerApplication(
-      id: 1001,
-      caseId: 201,
-      caseTitle: 'مساعدة في إغاثة عاجلة',
-      status: 'accepted',
-      appliedAt: DateTime.now().subtract(const Duration(days: 5)),
-      organizationName: 'منظمة الخير للإغاثة',
-      category: 'إغاثة عاجلة',
-    ),
-    VolunteerApplication(
-      id: 1002,
-      caseId: 202,
-      caseTitle: 'توزيع ملابس شتوية',
-      status: 'pending',
-      appliedAt: DateTime.now().subtract(const Duration(hours: 12)),
-      organizationName: 'مؤسسة الأمل',
-      category: 'ملابس',
-    ),
-    VolunteerApplication(
-      id: 1003,
-      caseId: 203,
-      caseTitle: 'إفطار صائم - رمضان',
-      status: 'completed',
-      appliedAt: DateTime.now().subtract(const Duration(days: 30)),
-      organizationName: 'جمعية خيرية',
-      category: 'مساعدات غذائية',
-    ),
-  ];
+  VolunteerRepositoryImpl({required HttpClient httpClient})
+    : _httpClient = httpClient;
 
   @override
   Future<Either<Failure, List<VolunteerCase>>> getAvailableCases({
@@ -120,27 +16,26 @@ class VolunteerRepositoryImpl implements VolunteerRepository {
     String? category,
     String? governorate,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 600));
-
-    var filteredCases = _availableCases;
-
-    if (category != null && category.isNotEmpty) {
-      filteredCases = filteredCases.where((c) => c.category == category).toList();
+    try {
+      final query = <String, dynamic>{'page': page, 'per_page': 10};
+      if (category != null && category.isNotEmpty) query['category'] = category;
+      if (governorate != null && governorate.isNotEmpty) {
+        query['governorate'] = governorate;
+      }
+      final response = await _httpClient.get<List<dynamic>>(
+        '/volunteer/cases',
+        queryParameters: query,
+        fromJsonT: (data) => data as List<dynamic>,
+      );
+      final cases = (response.data ?? [])
+          .map((e) => _caseFromJson(e as Map<String, dynamic>))
+          .toList();
+      return Right(cases);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تحميل حالات التطوع'));
     }
-    if (governorate != null && governorate.isNotEmpty) {
-      filteredCases = filteredCases.where((c) => c.governorate == governorate).toList();
-    }
-
-    // Simulate pagination
-    const itemsPerPage = 10;
-    final startIndex = (page - 1) * itemsPerPage;
-    final endIndex = min(startIndex + itemsPerPage, filteredCases.length);
-
-    if (startIndex >= filteredCases.length) {
-      return const Right([]);
-    }
-
-    return Right(filteredCases.sublist(startIndex, endIndex));
   }
 
   @override
@@ -148,83 +43,71 @@ class VolunteerRepositoryImpl implements VolunteerRepository {
     int page = 1,
     String? status,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-
-    var filtered = _myApplications;
-    if (status != null && status.isNotEmpty) {
-      filtered = filtered.where((a) => a.status == status).toList();
+    try {
+      final query = <String, dynamic>{'page': page, 'per_page': 10};
+      if (status != null && status.isNotEmpty) query['status'] = status;
+      final response = await _httpClient.get<List<dynamic>>(
+        '/volunteer/applications',
+        queryParameters: query,
+        fromJsonT: (data) => data as List<dynamic>,
+      );
+      final applications = (response.data ?? [])
+          .map((e) => _applicationFromJson(e as Map<String, dynamic>))
+          .toList();
+      return Right(applications);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تحميل طلبات التطوع'));
     }
-
-    return Right(filtered);
   }
 
   @override
   Future<Either<Failure, void>> applyToCase(int caseId) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    final caseIndex = _availableCases.indexWhere((c) => c.id == caseId);
-    if (caseIndex == -1) {
-      return Left(NotFoundFailure('الحالة غير موجودة'));
+    try {
+      await _httpClient.post(
+        '/volunteer/apply/$caseId',
+        fromJsonT: (data) => data,
+      );
+      return const Right(null);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في إرسال طلب التطوع'));
     }
-
-    final volunteerCase = _availableCases[caseIndex];
-    if (volunteerCase.isFull) {
-      return Left(ServerFailure('لا توجد أماكن متاحة'));
-    }
-
-    // Update volunteers applied count
-    final updatedCase = VolunteerCase(
-      id: volunteerCase.id,
-      title: volunteerCase.title,
-      description: volunteerCase.description,
-      category: volunteerCase.category,
-      governorate: volunteerCase.governorate,
-      priority: volunteerCase.priority,
-      organizationName: volunteerCase.organizationName,
-      createdAt: volunteerCase.createdAt,
-      volunteersNeeded: volunteerCase.volunteersNeeded,
-      volunteersApplied: volunteerCase.volunteersApplied + 1,
-      thumbnail: volunteerCase.thumbnail,
-      isUrgent: volunteerCase.isUrgent,
-    );
-    _availableCases[caseIndex] = updatedCase;
-
-    // Add to my applications
-    _myApplications.insert(0, VolunteerApplication(
-      id: DateTime.now().millisecondsSinceEpoch,
-      caseId: caseId,
-      caseTitle: volunteerCase.title,
-      status: 'pending',
-      appliedAt: DateTime.now(),
-      organizationName: volunteerCase.organizationName,
-      category: volunteerCase.category,
-    ));
-
-    return const Right(null);
   }
 
   @override
   Future<Either<Failure, void>> cancelApplication(int applicationId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final index = _myApplications.indexWhere((a) => a.id == applicationId);
-    if (index == -1) {
-      return Left(NotFoundFailure('الطلب غير موجود'));
+    try {
+      await _httpClient.delete(
+        '/volunteer/applications/$applicationId',
+        fromJsonT: (data) => data,
+      );
+      return const Right(null);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في إلغاء الطلب'));
     }
-
-    _myApplications.removeAt(index);
-    return const Right(null);
   }
 
   @override
   Future<Either<Failure, VolunteerCase>> getCaseDetails(int caseId) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    final caseItem = _availableCases.firstWhere(
-      (c) => c.id == caseId,
-      orElse: () => _availableCases.first,
-    );
-    return Right(caseItem);
+    try {
+      final response = await _httpClient.get<Map<String, dynamic>>(
+        '/volunteer/cases/$caseId',
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+      if (response.data == null) {
+        return Left(NotFoundFailure('الحالة غير موجودة'));
+      }
+      return Right(_caseFromJson(response.data!));
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تحميل تفاصيل الحالة'));
+    }
   }
 
   @override
@@ -234,22 +117,102 @@ class VolunteerRepositoryImpl implements VolunteerRepository {
     String? bio,
     List<String>? skills,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return const Right(null);
+    try {
+      final payload = <String, dynamic>{};
+      if (name != null) payload['name'] = name;
+      if (phone != null) payload['phone'] = phone;
+      if (bio != null) payload['bio'] = bio;
+      if (skills != null) payload['skills'] = skills;
+      await _httpClient.put(
+        '/volunteer/profile',
+        data: payload,
+        fromJsonT: (data) => data,
+      );
+      return const Right(null);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تحديث الملف الشخصي'));
+    }
   }
 
   @override
   Future<Either<Failure, Map<String, dynamic>>> getProfile() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return Right({
-      'name': 'أحمد محمد',
-      'email': 'ahmed@example.com',
-      'phone': '01012345678',
-      'bio': 'متطوع متخصص في العمل الخيري والإغاثي منذ 3 سنوات',
-      'skills': ['إغاثة', 'تدريس', 'تنظيم فعاليات'],
-      'joinedAt': '2022',
-      'completedCases': 12,
-      'activeCases': 2,
-    });
+    try {
+      final response = await _httpClient.get<Map<String, dynamic>>(
+        '/volunteer/profile',
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+      final data = response.data ?? <String, dynamic>{};
+      return Right({
+        'name': data['name'] ?? '',
+        'email': data['email'] ?? '',
+        'phone': data['phone'] ?? '',
+        'bio': data['bio'] ?? '',
+        'skills': data['skills'] ?? <String>[],
+        'joinedAt': data['joined_at'] ?? '',
+        'completedCases': data['completed_cases'] ?? 0,
+        'activeCases': data['active_cases'] ?? 0,
+      });
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تحميل الملف الشخصي'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _httpClient.put(
+        '/auth/password',
+        data: {
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        },
+        fromJsonT: (data) => data,
+      );
+      return const Right(null);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تغيير كلمة المرور'));
+    }
+  }
+
+  VolunteerCase _caseFromJson(Map<String, dynamic> json) {
+    return VolunteerCase(
+      id: json['id'] ?? 0,
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      category: json['category'] ?? '',
+      governorate: json['governorate'] ?? '',
+      priority: json['priority'] ?? 'medium',
+      organizationName: json['organization_name'] ?? '',
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
+      volunteersNeeded: json['volunteers_needed'] ?? 0,
+      volunteersApplied: json['volunteers_applied'] ?? 0,
+      thumbnail: json['thumbnail'],
+      isUrgent: json['is_urgent'] ?? false,
+    );
+  }
+
+  VolunteerApplication _applicationFromJson(Map<String, dynamic> json) {
+    return VolunteerApplication(
+      id: json['id'] ?? 0,
+      caseId: json['case_id'] ?? 0,
+      caseTitle: json['case_title'] ?? '',
+      status: json['status'] ?? 'pending',
+      appliedAt: json['applied_at'] != null
+          ? DateTime.parse(json['applied_at'])
+          : DateTime.now(),
+      organizationName: json['organization_name'] ?? '',
+      category: json['category'] ?? '',
+    );
   }
 }

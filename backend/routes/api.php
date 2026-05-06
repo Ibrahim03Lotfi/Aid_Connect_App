@@ -13,18 +13,19 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/organization/request', [OrganizationController::class, 'submitRequest']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/governorates', [GovernorateController::class, 'index']);
+Route::get('/cases', [CaseController::class, 'index']);
+Route::get('/cases/{id}', [CaseController::class, 'show']);
+
+Route::middleware('api.token')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
     Route::put('/auth/password', [AuthController::class, 'changePassword']);
 
-    Route::get('/categories', [CategoryController::class, 'index']);
-    Route::get('/governorates', [GovernorateController::class, 'index']);
-
-    Route::get('/cases', [CaseController::class, 'index']);
-    Route::get('/cases/{id}', [CaseController::class, 'show']);
     Route::post('/cases/{id}/views', [CaseController::class, 'incrementViews']);
 
     Route::get('/favorites', [FavoriteController::class, 'index']);
@@ -42,8 +43,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/organization/cases/{id}', [OrganizationController::class, 'show']);
     Route::put('/organization/cases/{id}', [OrganizationController::class, 'update']);
     Route::delete('/organization/cases/{id}', [OrganizationController::class, 'destroy']);
-    Route::post('/organization/request', [OrganizationController::class, 'submitRequest']);
-
     Route::get('/volunteer/cases', [VolunteerController::class, 'availableCases']);
     Route::get('/volunteer/cases/{id}', [VolunteerController::class, 'showCase']);
     Route::post('/volunteer/apply/{caseId}', [VolunteerController::class, 'apply']);

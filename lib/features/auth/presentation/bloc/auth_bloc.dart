@@ -36,17 +36,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       role: event.role,
     );
 
-    result.fold(
-      (failure) => emit(AuthFormState(
+    if (result.isLeft()) {
+      final failure = result.swap().getOrElse(() => UnknownFailure('Unknown failure'));
+      emit(AuthFormState(
         isLoading: false,
         errorMessage: _mapFailureToMessage(failure),
         fieldErrors: failure is ValidationFailure ? failure.errors : null,
-      )),
-      (user) async {
-        await _localStorage.saveRole(user.role);
-        emit(Authenticated(user));
-      },
-    );
+      ));
+      return;
+    }
+
+    final user = result.getOrElse(() => throw StateError('Missing user data'));
+    await _localStorage.saveRole(user.role);
+    if (!emit.isDone) {
+      emit(Authenticated(user));
+    }
   }
 
   Future<void> _onRegister(RegisterEvent event, Emitter<AuthState> emit) async {
@@ -59,17 +63,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       password: event.password,
     );
 
-    result.fold(
-      (failure) => emit(AuthFormState(
+    if (result.isLeft()) {
+      final failure = result.swap().getOrElse(() => UnknownFailure('Unknown failure'));
+      emit(AuthFormState(
         isLoading: false,
         errorMessage: _mapFailureToMessage(failure),
         fieldErrors: failure is ValidationFailure ? failure.errors : null,
-      )),
-      (user) async {
-        await _localStorage.saveRole(user.role);
-        emit(Authenticated(user));
-      },
-    );
+      ));
+      return;
+    }
+
+    final user = result.getOrElse(() => throw StateError('Missing user data'));
+    await _localStorage.saveRole(user.role);
+    if (!emit.isDone) {
+      emit(Authenticated(user));
+    }
   }
 
   Future<void> _onSubmitOrganizationRequest(

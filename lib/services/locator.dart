@@ -1,6 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../core/network/dio_client.dart';
+import '../core/network/http_client.dart';
 import '../features/auth/data/repositories/auth_repository_impl.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
@@ -36,33 +36,33 @@ Future<void> setupLocator() async {
     () => NotificationService(),
   );
 
-  // Dio Client (needs LocalStorageService for token)
-  locator.registerLazySingleton<DioClient>(
-    () => DioClient(locator<LocalStorageService>()),
+  // HTTP Client (needs LocalStorageService for token)
+  locator.registerLazySingleton<HttpClient>(
+    () => HttpClient(locator<LocalStorageService>()),
   );
 
   // Repositories
   locator.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
-      dioClient: locator<DioClient>(),
+      httpClient: locator<HttpClient>(),
       localStorage: locator<LocalStorageService>(),
     ),
   );
 
   locator.registerLazySingleton<UserRepository>(
-    () => UserRepositoryImpl(dioClient: locator<DioClient>()),
+    () => UserRepositoryImpl(httpClient: locator<HttpClient>()),
   );
 
   locator.registerLazySingleton<OrganizationRepository>(
-    () => OrganizationRepositoryImpl(),
+    () => OrganizationRepositoryImpl(httpClient: locator<HttpClient>()),
   );
 
   locator.registerLazySingleton<VolunteerRepository>(
-    () => VolunteerRepositoryImpl(),
+    () => VolunteerRepositoryImpl(httpClient: locator<HttpClient>()),
   );
 
   locator.registerLazySingleton<NotificationRepository>(
-    () => NotificationRepositoryImpl(locator<LocalStorageService>()),
+    () => NotificationRepositoryImpl(locator<HttpClient>()),
   );
 
   // BLoCs

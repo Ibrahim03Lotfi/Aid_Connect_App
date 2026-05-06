@@ -10,6 +10,10 @@ class OrganizationController extends ApiController
 {
     public function myCases(Request $request)
     {
+        if ($request->user()->role !== 'organization') {
+            return $this->errorResponse('Only organizations can access this endpoint', 403);
+        }
+
         $query = AidCase::where('organization_id', $request->user()->id);
 
         if ($request->has('status')) {
@@ -39,6 +43,10 @@ class OrganizationController extends ApiController
 
     public function show(Request $request, $id)
     {
+        if ($request->user()->role !== 'organization') {
+            return $this->errorResponse('Only organizations can access this endpoint', 403);
+        }
+
         $case = AidCase::where('organization_id', $request->user()->id)->find($id);
 
         if (! $case) {
@@ -64,6 +72,10 @@ class OrganizationController extends ApiController
 
     public function store(Request $request)
     {
+        if ($request->user()->role !== 'organization') {
+            return $this->errorResponse('Only organizations can access this endpoint', 403);
+        }
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
@@ -92,6 +104,10 @@ class OrganizationController extends ApiController
 
     public function update(Request $request, $id)
     {
+        if ($request->user()->role !== 'organization') {
+            return $this->errorResponse('Only organizations can access this endpoint', 403);
+        }
+
         $case = AidCase::where('organization_id', $request->user()->id)->find($id);
 
         if (! $case) {
@@ -119,6 +135,10 @@ class OrganizationController extends ApiController
 
     public function destroy(Request $request, $id)
     {
+        if ($request->user()->role !== 'organization') {
+            return $this->errorResponse('Only organizations can access this endpoint', 403);
+        }
+
         $case = AidCase::where('organization_id', $request->user()->id)->find($id);
 
         if (! $case) {

@@ -38,7 +38,7 @@ class CaseModel extends Case {
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
       isFavorited: json['is_favorited'] ?? false,
-      organizationName: json['organization']?['name'],
+      organizationName: json['organization_name'] ?? json['organization']?['name'],
       attachments: (json['attachments'] as List?)
               ?.map((e) => CaseAttachmentModel.fromJson(e))
               .toList() ??

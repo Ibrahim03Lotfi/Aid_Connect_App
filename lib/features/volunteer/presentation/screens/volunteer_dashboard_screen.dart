@@ -1,9 +1,10 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../../config/routes/app_routes.dart';
 import '../../../../services/locator.dart';
-import '../../domain/entities/volunteer_case.dart';
 import '../../domain/repositories/volunteer_repository.dart';
+import 'volunteer_available_cases_screen.dart';
+import 'volunteer_my_cases_screen.dart';
+import 'volunteer_profile_screen.dart';
 
 // Light of Impact - Warm Hopeful Color System
 const Color backgroundOffWhite = Color(0xFFF9FAFB);
@@ -370,7 +371,10 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
           'استعرض الحالات وقدم طلب تطوع',
           Icons.search_outlined,
           friendlyBlue,
-          () {},
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const VolunteerAvailableCasesScreen()),
+          ),
         ),
         const SizedBox(height: 12),
         _buildActionTile(
@@ -379,7 +383,10 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
           'تابع حالة طلبات التطوع',
           Icons.assignment_outlined,
           softTeal,
-          () {},
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const VolunteerMyCasesScreen()),
+          ),
         ),
         const SizedBox(height: 12),
         _buildActionTile(
@@ -388,7 +395,10 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
           'تحديث بياناتك ومهاراتك',
           Icons.person_outlined,
           Colors.orange,
-          () {},
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const VolunteerProfileScreen()),
+          ),
         ),
       ],
     );

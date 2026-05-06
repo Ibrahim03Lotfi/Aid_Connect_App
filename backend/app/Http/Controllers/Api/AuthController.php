@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class AuthController extends ApiController
 {
@@ -29,7 +29,10 @@ class AuthController extends ApiController
             return $this->errorResponse('Account is deactivated', 403);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $plainToken = Str::random(80);
+        $user->update([
+            'api_token' => hash('sha256', $plainToken),
+        ]);
 
         return $this->successResponse([
             'id' => $user->id,
@@ -39,7 +42,7 @@ class AuthController extends ApiController
             'role' => $user->role,
             'avatar' => $user->avatar,
             'is_active' => $user->is_active,
-            'token' => $token,
+            'token' => $plainToken,
             'token_type' => 'Bearer',
             'expires_in' => 3600,
         ], 'Login successful');
@@ -63,7 +66,10 @@ class AuthController extends ApiController
             'is_active' => true,
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $plainToken = Str::random(80);
+        $user->update([
+            'api_token' => hash('sha256', $plainToken),
+        ]);
 
         return $this->successResponse([
             'id' => $user->id,
@@ -73,7 +79,7 @@ class AuthController extends ApiController
             'role' => $user->role,
             'avatar' => $user->avatar,
             'is_active' => $user->is_active,
-            'token' => $token,
+            'token' => $plainToken,
             'token_type' => 'Bearer',
             'expires_in' => 3600,
         ], 'Registration successful');
@@ -81,7 +87,7 @@ class AuthController extends ApiController
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $request->user()->update(['api_token' => null]);
         return $this->successResponse(null, 'Logout successful');
     }
 

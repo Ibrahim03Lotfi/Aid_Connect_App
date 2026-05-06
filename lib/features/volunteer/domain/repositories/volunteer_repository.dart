@@ -35,4 +35,10 @@ abstract class VolunteerRepository {
 
   // Get volunteer profile
   Future<Either<Failure, Map<String, dynamic>>> getProfile();
+
+  // Change account password
+  Future<Either<Failure, void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  });
 }

@@ -12,32 +12,41 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
-        $organization = User::create([
-            'name' => 'منظمة الخير للإغاثة',
-            'email' => 'org@example.com',
-            'phone' => '0123456789',
-            'password' => Hash::make('password'),
-            'role' => 'organization',
-            'is_active' => true,
-        ]);
+        $organizations = collect([
+            ['name' => 'Jamiyat Alkhair', 'email' => 'org1@example.com', 'phone' => '0910000001'],
+            ['name' => 'Muassasat Alamal', 'email' => 'org2@example.com', 'phone' => '0910000002'],
+            ['name' => 'Jamiyat Annour', 'email' => 'org3@example.com', 'phone' => '0910000003'],
+            ['name' => 'Muassasat Albaraka', 'email' => 'org4@example.com', 'phone' => '0910000004'],
+            ['name' => 'Jamiyat Alinsan', 'email' => 'org5@example.com', 'phone' => '0910000005'],
+        ])->map(function ($org) {
+            return User::create([
+                'name' => $org['name'],
+                'email' => $org['email'],
+                'phone' => $org['phone'],
+                'password' => Hash::make('password'),
+                'role' => 'organization',
+                'is_active' => true,
+            ]);
+        });
 
-        $volunteer = User::create([
-            'name' => 'أحمد محمد',
-            'email' => 'volunteer@example.com',
-            'phone' => '01012345678',
-            'password' => Hash::make('password'),
-            'role' => 'volunteer',
-            'is_active' => true,
-        ]);
+        collect([
+            ['name' => 'Ibrahim', 'email' => 'ibrahim@example.com', 'phone' => '0920000001'],
+            ['name' => 'Khalil', 'email' => 'khalil@example.com', 'phone' => '0920000002'],
+            ['name' => 'Sara', 'email' => 'sara@example.com', 'phone' => '0920000003'],
+            ['name' => 'Maya', 'email' => 'maya@example.com', 'phone' => '0920000004'],
+            ['name' => 'Nad', 'email' => 'nad@example.com', 'phone' => '0920000005'],
+        ])->each(function ($vol) {
+            User::create([
+                'name' => $vol['name'],
+                'email' => $vol['email'],
+                'phone' => $vol['phone'],
+                'password' => Hash::make('pppppppp'),
+                'role' => 'volunteer',
+                'is_active' => true,
+            ]);
+        });
 
-        $user = User::create([
-            'name' => 'مستخدم تجريبي',
-            'email' => 'user@example.com',
-            'phone' => '01111111111',
-            'password' => Hash::make('password'),
-            'role' => 'user',
-            'is_active' => true,
-        ]);
+        $primaryOrganization = $organizations->first();
 
         $cases = [
             [
@@ -47,7 +56,7 @@ class DemoDataSeeder extends Seeder
                 'priority' => 'high',
                 'category_id' => 1,
                 'governorate_id' => 1,
-                'organization_id' => $organization->id,
+                'organization_id' => $primaryOrganization->id,
                 'views' => 120,
             ],
             [
@@ -57,7 +66,7 @@ class DemoDataSeeder extends Seeder
                 'priority' => 'urgent',
                 'category_id' => 3,
                 'governorate_id' => 2,
-                'organization_id' => $organization->id,
+                'organization_id' => $primaryOrganization->id,
                 'views' => 230,
             ],
             [
@@ -67,7 +76,7 @@ class DemoDataSeeder extends Seeder
                 'priority' => 'medium',
                 'category_id' => 2,
                 'governorate_id' => 3,
-                'organization_id' => $organization->id,
+                'organization_id' => $primaryOrganization->id,
                 'views' => 89,
             ],
             [
@@ -77,7 +86,7 @@ class DemoDataSeeder extends Seeder
                 'priority' => 'medium',
                 'category_id' => 4,
                 'governorate_id' => 1,
-                'organization_id' => $organization->id,
+                'organization_id' => $primaryOrganization->id,
                 'views' => 156,
             ],
             [
@@ -87,7 +96,7 @@ class DemoDataSeeder extends Seeder
                 'priority' => 'high',
                 'category_id' => 5,
                 'governorate_id' => 4,
-                'organization_id' => $organization->id,
+                'organization_id' => $primaryOrganization->id,
                 'views' => 67,
             ],
         ];
@@ -103,7 +112,7 @@ class DemoDataSeeder extends Seeder
                 'category' => 'مساعدات غذائية',
                 'governorate' => 'القاهرة',
                 'priority' => 'high',
-                'organization_id' => $organization->id,
+                'organization_id' => $primaryOrganization->id,
                 'volunteers_needed' => 10,
                 'volunteers_applied' => 4,
                 'is_urgent' => true,
@@ -114,7 +123,7 @@ class DemoDataSeeder extends Seeder
                 'category' => 'علاج طبي',
                 'governorate' => 'الأقصر',
                 'priority' => 'urgent',
-                'organization_id' => $organization->id,
+                'organization_id' => $primaryOrganization->id,
                 'volunteers_needed' => 6,
                 'volunteers_applied' => 2,
                 'is_urgent' => true,
@@ -125,7 +134,7 @@ class DemoDataSeeder extends Seeder
                 'category' => 'تعليم',
                 'governorate' => 'المنصورة',
                 'priority' => 'medium',
-                'organization_id' => $organization->id,
+                'organization_id' => $primaryOrganization->id,
                 'volunteers_needed' => 4,
                 'volunteers_applied' => 1,
             ],

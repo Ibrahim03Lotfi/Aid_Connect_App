@@ -1,6 +1,6 @@
 class AppConstants {
   // API
-  static const String baseUrl = 'http://localhost:8000/api';
+  static const String baseUrl = 'http://192.168.1.14:8000/api';
   
   // Pagination
   static const int defaultPageSize = 10;

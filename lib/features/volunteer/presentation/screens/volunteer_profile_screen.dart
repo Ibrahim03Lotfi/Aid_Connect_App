@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../config/routes/app_routes.dart';
 import '../../../../services/locator.dart';
+import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../domain/repositories/volunteer_repository.dart';
 
 // Light of Impact - Warm Hopeful Color System
@@ -106,19 +107,30 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
 
   Future<void> _changePassword() async {
     if (!_passwordFormKey.currentState!.validate()) return;
-    
+
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
-    
-    _currentPasswordController.clear();
-    _newPasswordController.clear();
-    _confirmPasswordController.clear();
-    
-    if (mounted) {
-      Navigator.pop(context);
-      _showSnackBar('تم تغيير كلمة المرور بنجاح!', softTeal);
-    }
+    final repository = locator<VolunteerRepository>();
+    final result = await repository.changePassword(
+      currentPassword: _currentPasswordController.text,
+      newPassword: _newPasswordController.text,
+    );
+
+    if (!mounted) return;
+
+    result.fold(
+      (failure) {
+        setState(() => _isLoading = false);
+        _showSnackBar('فشل: ${failure.message}', Colors.red);
+      },
+      (_) {
+        setState(() => _isLoading = false);
+        _currentPasswordController.clear();
+        _newPasswordController.clear();
+        _confirmPasswordController.clear();
+        Navigator.pop(context);
+        _showSnackBar('تم تغيير كلمة المرور بنجاح!', softTeal);
+      },
+    );
   }
 
   void _showSnackBar(String message, Color color) {
@@ -311,10 +323,12 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
             child: Text('إلغاء', style: TextStyle(color: textMedium)),
           ),
           GestureDetector(
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
+              await locator<AuthRepository>().logout();
+              if (!mounted) return;
               Navigator.pushNamedAndRemoveUntil(
-                context,
+                this.context,
                 AppRoutes.login,
                 (route) => false,
               );
@@ -528,7 +542,7 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'متطوع منذ ${_profile?['joinedAt'] ?? ''}',
+            'متطوع منذ ${_profile?['joinedAt'] ?? _profile?['joined_at'] ?? ''}',
             style: TextStyle(
               fontSize: 14,
               color: textMedium,

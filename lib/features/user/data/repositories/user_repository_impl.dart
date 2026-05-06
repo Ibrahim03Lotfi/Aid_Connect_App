@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
-import '../../../../core/network/dio_client.dart';
+import '../../../../core/network/http_client.dart';
 import '../../domain/entities/case.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/governorate.dart';
@@ -10,14 +10,15 @@ import '../models/category_model.dart';
 import '../models/governorate_model.dart';
 
 class UserRepositoryImpl implements UserRepository {
-  final DioClient _dioClient;
+  final HttpClient _httpClient;
 
-  UserRepositoryImpl({required DioClient dioClient}) : _dioClient = dioClient;
+  UserRepositoryImpl({required HttpClient httpClient})
+    : _httpClient = httpClient;
 
   @override
   Future<Either<Failure, List<Category>>> getCategories() async {
     try {
-      final response = await _dioClient.get<List<dynamic>>(
+      final response = await _httpClient.get<List<dynamic>>(
         '/categories',
         fromJsonT: (data) => data as List<dynamic>,
       );
@@ -35,7 +36,7 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<Either<Failure, List<Case>>> getLatestCases({int page = 1}) async {
     try {
-      final response = await _dioClient.get<List<dynamic>>(
+      final response = await _httpClient.get<List<dynamic>>(
         '/cases',
         queryParameters: {'page': page, 'per_page': 10},
         fromJsonT: (data) => data as List<dynamic>,
@@ -66,7 +67,7 @@ class UserRepositoryImpl implements UserRepository {
       if (categoryId != null) {
         query['category_id'] = categoryId;
       }
-      final response = await _dioClient.get<List<dynamic>>(
+      final response = await _httpClient.get<List<dynamic>>(
         '/cases',
         queryParameters: query,
         fromJsonT: (data) => data as List<dynamic>,
@@ -85,7 +86,7 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<Either<Failure, Case>> getCaseDetails(int caseId) async {
     try {
-      final response = await _dioClient.get<Map<String, dynamic>>(
+      final response = await _httpClient.get<Map<String, dynamic>>(
         '/cases/$caseId',
         fromJsonT: (data) => data as Map<String, dynamic>,
       );
@@ -103,7 +104,7 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<Either<Failure, void>> incrementCaseViews(int caseId) async {
     try {
-      await _dioClient.post('/cases/$caseId/views', fromJsonT: (data) => data);
+      await _httpClient.post('/cases/$caseId/views', fromJsonT: (data) => data);
       return const Right(null);
     } on Failure catch (failure) {
       return Left(failure);
@@ -115,7 +116,7 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<Either<Failure, List<Governorate>>> getGovernorates() async {
     try {
-      final response = await _dioClient.get<List<dynamic>>(
+      final response = await _httpClient.get<List<dynamic>>(
         '/governorates',
         fromJsonT: (data) => data as List<dynamic>,
       );
@@ -133,7 +134,7 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<Either<Failure, List<Case>>> getFavorites() async {
     try {
-      final response = await _dioClient.get<List<dynamic>>(
+      final response = await _httpClient.get<List<dynamic>>(
         '/favorites',
         fromJsonT: (data) => data as List<dynamic>,
       );
@@ -151,7 +152,7 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<Either<Failure, void>> addToFavorites(int caseId) async {
     try {
-      await _dioClient.post(
+      await _httpClient.post(
         '/favorites',
         data: {'case_id': caseId},
         fromJsonT: (data) => data,
@@ -167,7 +168,7 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<Either<Failure, void>> removeFromFavorites(int caseId) async {
     try {
-      await _dioClient.delete('/favorites/$caseId', fromJsonT: (data) => data);
+      await _httpClient.delete('/favorites/$caseId', fromJsonT: (data) => data);
       return const Right(null);
     } on Failure catch (failure) {
       return Left(failure);
@@ -188,7 +189,7 @@ class UserRepositoryImpl implements UserRepository {
       if (phone != null) data['phone'] = phone;
       if (avatar != null) data['avatar'] = avatar;
 
-      await _dioClient.put('/user', data: data, fromJsonT: (data) => data);
+      await _httpClient.put('/user', data: data, fromJsonT: (data) => data);
       return const Right(null);
     } on Failure catch (failure) {
       return Left(failure);
@@ -203,7 +204,7 @@ class UserRepositoryImpl implements UserRepository {
     required String newPassword,
   }) async {
     try {
-      await _dioClient.put(
+      await _httpClient.put(
         '/auth/password',
         data: {
           'current_password': currentPassword,
