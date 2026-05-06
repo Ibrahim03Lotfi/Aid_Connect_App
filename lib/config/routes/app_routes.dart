@@ -3,7 +3,6 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/organization_request_screen.dart';
 import '../../features/user/presentation/screens/user_main_screen.dart';
-import '../../features/user/presentation/screens/home_screen.dart';
 import '../../features/user/presentation/screens/governorates_screen.dart';
 import '../../features/user/presentation/screens/case_details_screen.dart';
 import '../../features/user/presentation/screens/profile_screen.dart';
@@ -15,10 +14,8 @@ import '../../features/organization/presentation/screens/org_cases_screen.dart';
 import '../../features/organization/presentation/screens/org_main_screen.dart';
 import '../../features/organization/presentation/screens/org_profile_screen.dart';
 import '../../features/volunteer/presentation/screens/volunteer_main_screen.dart';
-import '../../features/volunteer/presentation/screens/volunteer_profile_screen.dart';
-import '../../features/volunteer/presentation/screens/volunteer_available_cases_screen.dart';
-import '../../features/volunteer/presentation/screens/volunteer_my_cases_screen.dart';
 import '../../features/volunteer/presentation/screens/volunteer_dashboard_screen.dart';
+import '../../features/volunteer/presentation/screens/volunteer_create_my_case_screen.dart';
 import '../../features/splash/presentation/screens/splash_screen.dart';
 
 class AppRoutes {
@@ -46,6 +43,7 @@ class AppRoutes {
   static const String volunteerMain = '/volunteer-main';
   static const String volunteerDashboard = '/volunteer-dashboard';
   static const String volunteerCases = '/volunteer-cases';
+  static const String volunteerCreateMyCase = '/volunteer-create-my-case';
 
   // Notifications
   static const String notifications = '/notifications';
@@ -112,6 +110,9 @@ class AppRoutes {
 
       case volunteerDashboard:
         return MaterialPageRoute(builder: (_) => const VolunteerDashboardScreen());
+
+      case volunteerCreateMyCase:
+        return MaterialPageRoute(builder: (_) => const VolunteerCreateMyCaseScreen());
 
       default:
         return MaterialPageRoute(

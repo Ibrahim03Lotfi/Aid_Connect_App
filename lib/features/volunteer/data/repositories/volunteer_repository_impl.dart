@@ -1,6 +1,10 @@
 import 'package:dartz/dartz.dart';
+import 'package:http/http.dart' as http;
 import '../../../../core/errors/failures.dart';
 import '../../../../core/network/http_client.dart';
+import '../../../organization/domain/entities/org_case.dart';
+import '../../../user/data/models/case_model.dart';
+import '../../../user/domain/entities/case.dart';
 import '../../domain/entities/volunteer_case.dart';
 import '../../domain/repositories/volunteer_repository.dart';
 
@@ -180,6 +184,165 @@ class VolunteerRepositoryImpl implements VolunteerRepository {
       return Left(failure);
     } catch (_) {
       return Left(ServerFailure('فشل في تغيير كلمة المرور'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getDashboard() async {
+    try {
+      final response = await _httpClient.get<Map<String, dynamic>>(
+        '/volunteer/dashboard',
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+      return Right(response.data ?? <String, dynamic>{});
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تحميل لوحة المتطوع'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Case>>> getVolunteerFeed({
+    int page = 1,
+    String? query,
+  }) async {
+    try {
+      final qp = <String, dynamic>{'page': page, 'per_page': 10};
+      if (query != null && query.trim().isNotEmpty) qp['q'] = query.trim();
+      final response = await _httpClient.get<List<dynamic>>(
+        '/volunteer/feed',
+        queryParameters: qp,
+        fromJsonT: (data) => data as List<dynamic>,
+      );
+      final items = (response.data ?? [])
+          .map((e) => CaseModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return Right(items);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تحميل الحالات'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<OrgCase>>> getMyCases({
+    int page = 1,
+  }) async {
+    try {
+      final qp = <String, dynamic>{'page': page, 'per_page': 10};
+      final response = await _httpClient.get<List<dynamic>>(
+        '/volunteer/my-cases',
+        queryParameters: qp,
+        fromJsonT: (data) => data as List<dynamic>,
+      );
+      final items = (response.data ?? []).map((e) {
+        final json = e as Map<String, dynamic>;
+        return OrgCase(
+          id: json['id'] ?? 0,
+          title: json['title'] ?? '',
+          description: json['description'] ?? '',
+          status: json['status'] ?? 'pending',
+          priority: json['priority'] ?? 'medium',
+          category: json['category'] ?? '',
+          governorate: json['governorate'] ?? '',
+          views: json['views'] ?? 0,
+          donationsCount: json['donations_count'] ?? 0,
+          createdAt: json['created_at'] != null
+              ? DateTime.parse(json['created_at'])
+              : DateTime.now(),
+          rejectionReason: json['rejection_reason'],
+          images: const [],
+        );
+      }).toList();
+      return Right(items);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تحميل حالاتك'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> createMyCase({
+    required String title,
+    required String description,
+    required int categoryId,
+    required int governorateId,
+    required String priority,
+    List<String> imagePaths = const [],
+  }) async {
+    try {
+      final files = imagePaths
+          .map((p) => http.MultipartFile.fromPath('images[]', p))
+          .toList();
+      await _httpClient.postMultipart(
+        '/volunteer/my-cases',
+        fields: {
+          'title': title,
+          'description': description,
+          'category_id': categoryId.toString(),
+          'governorate_id': governorateId.toString(),
+          'priority': priority,
+        },
+        files: await Future.wait(files),
+        fromJsonT: (data) => data,
+      );
+      return const Right(null);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في إنشاء الحالة'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updateMyCase({
+    required int caseId,
+    required String title,
+    required String description,
+    required int categoryId,
+    required int governorateId,
+    required String priority,
+    List<String> imagePaths = const [],
+  }) async {
+    try {
+      final files = imagePaths
+          .map((p) => http.MultipartFile.fromPath('images[]', p))
+          .toList();
+      await _httpClient.putMultipart(
+        '/volunteer/my-cases/$caseId',
+        fields: {
+          'title': title,
+          'description': description,
+          'category_id': categoryId.toString(),
+          'governorate_id': governorateId.toString(),
+          'priority': priority,
+        },
+        files: await Future.wait(files),
+        fromJsonT: (data) => data,
+      );
+      return const Right(null);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تعديل الحالة'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteMyCase(int caseId) async {
+    try {
+      await _httpClient.delete(
+        '/volunteer/my-cases/$caseId',
+        fromJsonT: (data) => data,
+      );
+      return const Right(null);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في حذف الحالة'));
     }
   }
 

@@ -12,14 +12,30 @@ class AuthController extends ApiController
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+            'email' => 'required|string',
+            'password' => 'required|string',
             'role' => 'required|in:user,organization,volunteer,admin',
         ]);
 
-        $user = User::where('email', $request->email)
-            ->where('role', $request->role)
-            ->first();
+        $identifier = trim($request->email);
+
+        // Users login with email; org/volunteer login with name (as in Flutter UI),
+        // but we still allow email for all roles if provided.
+        if ($request->role === 'user' && ! filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            return $this->errorResponse('Email is required for user login', 422, [
+                'email' => ['The email field must be a valid email address.'],
+            ]);
+        }
+
+        $query = User::where('role', $request->role);
+
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            $query->where('email', $identifier);
+        } else {
+            $query->where('name', $identifier);
+        }
+
+        $user = $query->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
             return $this->errorResponse('Invalid credentials', 401);

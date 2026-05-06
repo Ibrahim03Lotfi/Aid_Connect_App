@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../config/routes/app_routes.dart';
 import '../../../../services/locator.dart';
 import '../../domain/repositories/volunteer_repository.dart';
-import 'volunteer_available_cases_screen.dart';
 import 'volunteer_my_cases_screen.dart';
 import 'volunteer_profile_screen.dart';
 
@@ -27,24 +26,25 @@ class VolunteerDashboardScreen extends StatefulWidget {
 class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
   bool _isLoading = true;
   Map<String, dynamic>? _profile;
+  Map<String, dynamic>? _dashboard;
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _loadData();
   }
 
-  Future<void> _loadProfile() async {
+  Future<void> _loadData() async {
     final repository = locator<VolunteerRepository>();
-    final result = await repository.getProfile();
-    
-    result.fold(
-      (failure) => setState(() => _isLoading = false),
-      (profile) => setState(() {
-        _profile = profile;
-        _isLoading = false;
-      }),
-    );
+    final profileResult = await repository.getProfile();
+    final dashboardResult = await repository.getDashboard();
+
+    if (!mounted) return;
+
+    profileResult.fold((_) {}, (profile) => _profile = profile);
+    dashboardResult.fold((_) {}, (data) => _dashboard = data);
+
+    setState(() => _isLoading = false);
   }
 
   @override
@@ -82,40 +82,34 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
       ),
       body: _isLoading
           ? _buildLoadingView()
-          : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildWelcomeSection(),
-                    const SizedBox(height: 24),
-                    _buildStatsRow(),
-                    const SizedBox(height: 24),
-                    _buildUrgentBanner(),
-                    const SizedBox(height: 24),
-                    Text(
-                      'الإجراءات السريعة',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: friendlyBlue,
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              color: friendlyBlue,
+              backgroundColor: cardWhite,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildWelcomeSection(),
+                      const SizedBox(height: 24),
+                      _buildStatsRow(),
+                      const SizedBox(height: 24),
+                      Text(
+                        'الإجراءات السريعة',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: friendlyBlue,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildQuickActions(context),
-                    const SizedBox(height: 24),
-                    Text(
-                      'آخر النشاطات',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: friendlyBlue,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildRecentActivity(),
-                  ],
+                      const SizedBox(height: 16),
+                      _buildQuickActions(context),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -237,27 +231,22 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
   }
 
   Widget _buildStatsRow() {
+    final myPosted = (_dashboard?['my_posted_cases_count'] as int?) ?? 0;
+    final allVol = (_dashboard?['all_volunteer_cases_count'] as int?) ?? 0;
     return Row(
       children: [
         _buildStatCard(
           'الحالات المكتملة',
-          '${_profile?['completedCases'] ?? 0}',
+          '$myPosted',
           softTeal,
           Icons.check_circle_outlined,
         ),
         const SizedBox(width: 12),
         _buildStatCard(
-          'الحالات النشطة',
-          '${_profile?['activeCases'] ?? 0}',
+          'حالات جميع المتطوعين',
+          '$allVol',
           friendlyBlue,
-          Icons.assignment_outlined,
-        ),
-        const SizedBox(width: 12),
-        _buildStatCard(
-          'سنوات الخبرة',
-          '${DateTime.now().year - int.parse(_profile?['joinedAt'] ?? '2020')}',
-          Colors.orange,
-          Icons.star_outline,
+          Icons.groups_outlined,
         ),
       ],
     );
@@ -318,69 +307,13 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
     );
   }
 
-  Widget _buildUrgentBanner() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.red.withAlpha(15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.withAlpha(40), width: 1),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.red.withAlpha(20),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.campaign_outlined, color: Colors.red, size: 24),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'حالات بحاجة للمساعدة العاجلة!',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: Colors.red,
-                    fontSize: 14,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'هناك 3 حالات عاجلة بحاجة لمتطوعين',
-                  style: TextStyle(fontSize: 13, color: Colors.red),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildQuickActions(BuildContext context) {
     return Column(
       children: [
         _buildActionTile(
           context,
-          'الحالات المتاحة',
-          'استعرض الحالات وقدم طلب تطوع',
-          Icons.search_outlined,
-          friendlyBlue,
-          () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const VolunteerAvailableCasesScreen()),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _buildActionTile(
-          context,
-          'طلباتي',
-          'تابع حالة طلبات التطوع',
+          'حالاتي',
+          'أنشئ حالاتك وتابع حالتها',
           Icons.assignment_outlined,
           softTeal,
           () => Navigator.push(
@@ -455,71 +388,4 @@ class _VolunteerDashboardScreenState extends State<VolunteerDashboardScreen> {
     );
   }
 
-  Widget _buildRecentActivity() {
-    final activities = [
-      {
-        'title': 'تم قبول طلبك في "توزيع سلال غذائية"',
-        'time': 'منذ 2 ساعة',
-        'icon': Icons.check_circle_outlined,
-        'color': softTeal,
-      },
-      {
-        'title': 'تقدمت بطلب تطوع جديد',
-        'time': 'منذ 5 ساعات',
-        'icon': Icons.send_outlined,
-        'color': friendlyBlue,
-      },
-      {
-        'title': 'أكملت حالة "إفطار صائم"',
-        'time': 'منذ يوم',
-        'icon': Icons.volunteer_activism_outlined,
-        'color': Colors.orange,
-      },
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: cardWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderLight, width: 1),
-      ),
-      child: ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: activities.length,
-        itemBuilder: (context, index) {
-          final activity = activities[index];
-          return ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: (activity['color'] as Color).withAlpha(15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                activity['icon'] as IconData,
-                color: activity['color'] as Color,
-                size: 20,
-              ),
-            ),
-            title: Text(
-              activity['title'] as String,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: textDark,
-              ),
-            ),
-            subtitle: Text(
-              activity['time'] as String,
-              style: TextStyle(
-                fontSize: 12,
-                color: textLight,
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 }

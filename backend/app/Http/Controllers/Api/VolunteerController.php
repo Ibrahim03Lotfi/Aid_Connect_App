@@ -2,12 +2,209 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\AidCase;
 use App\Models\VolunteerApplication;
 use App\Models\VolunteerOpportunity;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class VolunteerController extends ApiController
 {
+    public function dashboard(Request $request)
+    {
+        if ($request->user()->role !== 'volunteer') {
+            return $this->errorResponse('Only volunteers can access this endpoint', 403);
+        }
+
+        $myCasesQuery = AidCase::where('organization_id', $request->user()->id);
+        $myPostedCasesCount = (clone $myCasesQuery)->count();
+
+        $allVolunteerCasesCount = AidCase::whereHas('organization', function ($q) {
+            $q->where('role', 'volunteer');
+        })->count();
+
+        return $this->successResponse([
+            'my_posted_cases_count' => $myPostedCasesCount,
+            'all_volunteer_cases_count' => $allVolunteerCasesCount,
+        ]);
+    }
+
+    // Volunteer searchable feed of approved cases posted by volunteers (random order)
+    public function volunteerCasesFeed(Request $request)
+    {
+        if ($request->user()->role !== 'volunteer') {
+            return $this->errorResponse('Only volunteers can access this endpoint', 403);
+        }
+
+        $query = AidCase::with(['category', 'governorate', 'organization'])
+            ->where('status', 'approved')
+            ->whereHas('organization', function ($q) {
+                $q->where('role', 'volunteer');
+            });
+
+        if ($request->filled('q')) {
+            $q = $request->q;
+            $query->where(function ($sub) use ($q) {
+                $sub->where('title', 'like', "%{$q}%")
+                    ->orWhereHas('organization', function ($org) use ($q) {
+                        $org->where('name', 'like', "%{$q}%");
+                    })
+                    ->orWhereHas('governorate', function ($gov) use ($q) {
+                        $gov->where('name', 'like', "%{$q}%");
+                    });
+            });
+        }
+
+        $cases = $query->inRandomOrder()->paginate($request->per_page ?? 10);
+        $data = $cases->map(function ($case) use ($request) {
+            return [
+                'id' => $case->id,
+                'title' => $case->title,
+                'description' => $case->description,
+                'status' => $case->status,
+                'priority' => $case->priority,
+                'category_id' => $case->category_id,
+                'category' => $case->category?->name,
+                'governorate_id' => $case->governorate_id,
+                'governorate' => $case->governorate?->name,
+                'views' => $case->views,
+                'thumbnail' => $case->thumbnail,
+                'created_at' => $case->created_at->toIso8601String(),
+                'organization_name' => $case->organization?->name,
+                'is_favorited' => false,
+            ];
+        });
+
+        return $this->paginatedResponse($data, $cases);
+    }
+
+    // Volunteer-owned aid cases (CRUD like organization)
+    public function myAidCases(Request $request)
+    {
+        if ($request->user()->role !== 'volunteer') {
+            return $this->errorResponse('Only volunteers can access this endpoint', 403);
+        }
+
+        $query = AidCase::where('organization_id', $request->user()->id);
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+        $cases = $query->latest()->paginate($request->per_page ?? 10);
+
+        $data = $cases->map(function ($case) {
+            return [
+                'id' => $case->id,
+                'title' => $case->title,
+                'description' => $case->description,
+                'status' => $case->status,
+                'priority' => $case->priority,
+                'category' => $case->category?->name,
+                'governorate' => $case->governorate?->name,
+                'views' => $case->views,
+                'donations_count' => 0,
+                'created_at' => $case->created_at->toIso8601String(),
+                'rejection_reason' => $case->rejection_reason,
+            ];
+        });
+
+        return $this->paginatedResponse($data, $cases);
+    }
+
+    public function storeAidCase(Request $request)
+    {
+        if ($request->user()->role !== 'volunteer') {
+            return $this->errorResponse('Only volunteers can access this endpoint', 403);
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'category_id' => 'required|exists:categories,id',
+            'governorate_id' => 'required|exists:governorates,id',
+            'priority' => 'required|in:low,medium,high,urgent',
+            'attachments' => 'sometimes|array',
+            'images' => 'sometimes|array',
+            'images.*' => 'image|max:5120',
+        ]);
+
+        $case = AidCase::create([
+            ...collect($validated)->except(['images'])->toArray(),
+            'organization_id' => $request->user()->id,
+            'status' => 'pending',
+            'views' => 0,
+        ]);
+
+        if ($request->hasFile('images')) {
+            $urls = [];
+            foreach ($request->file('images') as $index => $file) {
+                $path = $file->store('case-images', 'public');
+                $url = Storage::url($path);
+                $urls[] = $url;
+                $case->images()->create(['url' => $url, 'order' => $index]);
+            }
+            if (! empty($urls)) {
+                $case->thumbnail = $urls[0];
+                $case->save();
+            }
+        }
+
+        return $this->successResponse(null, 'Case created successfully');
+    }
+
+    public function updateAidCase(Request $request, $id)
+    {
+        if ($request->user()->role !== 'volunteer') {
+            return $this->errorResponse('Only volunteers can access this endpoint', 403);
+        }
+
+        $case = AidCase::where('organization_id', $request->user()->id)->find($id);
+        if (! $case) {
+            return $this->errorResponse('Case not found', 404);
+        }
+
+        $validated = $request->validate([
+            'title' => 'sometimes|string|max:255',
+            'description' => 'sometimes|string',
+            'priority' => 'sometimes|in:low,medium,high,urgent',
+            'images' => 'sometimes|array',
+            'images.*' => 'image|max:5120',
+        ]);
+
+        $case->update(collect($validated)->except(['images'])->toArray());
+
+        if ($request->hasFile('images')) {
+            $case->images()->delete();
+            $urls = [];
+            foreach ($request->file('images') as $index => $file) {
+                $path = $file->store('case-images', 'public');
+                $url = Storage::url($path);
+                $urls[] = $url;
+                $case->images()->create(['url' => $url, 'order' => $index]);
+            }
+            if (! empty($urls)) {
+                $case->thumbnail = $urls[0];
+                $case->save();
+            }
+        }
+
+        return $this->successResponse(null, 'Case updated successfully');
+    }
+
+    public function destroyAidCase(Request $request, $id)
+    {
+        if ($request->user()->role !== 'volunteer') {
+            return $this->errorResponse('Only volunteers can access this endpoint', 403);
+        }
+
+        $case = AidCase::where('organization_id', $request->user()->id)->find($id);
+        if (! $case) {
+            return $this->errorResponse('Case not found', 404);
+        }
+
+        $case->delete();
+        return $this->successResponse(null, 'Case deleted successfully');
+    }
+
     public function availableCases(Request $request)
     {
         if ($request->user()->role !== 'volunteer') {

@@ -74,6 +74,36 @@ class HttpClient {
     );
   }
 
+  Future<ApiResponse<T>> postMultipart<T>(
+    String path, {
+    required Map<String, String> fields,
+    required List<http.MultipartFile> files,
+    required T Function(dynamic) fromJsonT,
+  }) async {
+    return _multipartRequest(
+      method: 'POST',
+      path: path,
+      fields: fields,
+      files: files,
+      fromJsonT: fromJsonT,
+    );
+  }
+
+  Future<ApiResponse<T>> putMultipart<T>(
+    String path, {
+    required Map<String, String> fields,
+    required List<http.MultipartFile> files,
+    required T Function(dynamic) fromJsonT,
+  }) async {
+    return _multipartRequest(
+      method: 'PUT',
+      path: path,
+      fields: fields,
+      files: files,
+      fromJsonT: fromJsonT,
+    );
+  }
+
   Future<ApiResponse<T>> _request<T>({
     required String method,
     required String path,
@@ -138,6 +168,58 @@ class HttpClient {
         return ApiResponse.fromJson(body, fromJsonT);
       }
 
+      throw _mapHttpError(response.statusCode, body);
+    } on TimeoutException {
+      throw const TimeoutFailure('انتهت مهلة الاتصال، يرجى المحاولة مرة أخرى');
+    } on Failure {
+      rethrow;
+    } on http.ClientException {
+      throw const NetworkFailure('لا يوجد اتصال بالإنترنت، يرجى التحقق من اتصالك');
+    } catch (e) {
+      throw UnknownFailure(e.toString());
+    }
+  }
+
+  Future<ApiResponse<T>> _multipartRequest<T>({
+    required String method,
+    required String path,
+    required Map<String, String> fields,
+    required List<http.MultipartFile> files,
+    required T Function(dynamic) fromJsonT,
+  }) async {
+    try {
+      final token = await _localStorage.getToken();
+      final headers = <String, String>{
+        'Accept': 'application/json',
+        'Accept-Language': 'ar',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final uri = Uri.parse('${AppConstants.baseUrl}$path');
+      if (kDebugMode) {
+        _logger.i('$method(multipart) => $uri');
+      }
+
+      final req = http.MultipartRequest(method, uri);
+      req.headers.addAll(headers);
+      req.fields.addAll(fields);
+      req.files.addAll(files);
+
+      final streamed = await req
+          .send()
+          .timeout(Duration(seconds: AppConstants.connectionTimeout));
+      final response = await http.Response.fromStream(streamed);
+
+      final decoded = response.body.isNotEmpty
+          ? jsonDecode(response.body)
+          : <String, dynamic>{};
+      final body = decoded is Map<String, dynamic>
+          ? decoded
+          : <String, dynamic>{'data': decoded};
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return ApiResponse.fromJson(body, fromJsonT);
+      }
       throw _mapHttpError(response.statusCode, body);
     } on TimeoutException {
       throw const TimeoutFailure('انتهت مهلة الاتصال، يرجى المحاولة مرة أخرى');

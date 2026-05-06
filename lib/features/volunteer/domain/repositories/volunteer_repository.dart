@@ -1,5 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../organization/domain/entities/org_case.dart';
+import '../../../user/domain/entities/case.dart';
 import '../entities/volunteer_case.dart';
 
 abstract class VolunteerRepository {
@@ -41,4 +43,39 @@ abstract class VolunteerRepository {
     required String currentPassword,
     required String newPassword,
   });
+
+  // Volunteer dashboard data (urgent count + recent activity)
+  Future<Either<Failure, Map<String, dynamic>>> getDashboard();
+
+  // Searchable feed of volunteer-published cases (approved only)
+  Future<Either<Failure, List<Case>>> getVolunteerFeed({
+    int page = 1,
+    String? query,
+  });
+
+  // Volunteer-owned aid cases (CRUD like organization)
+  Future<Either<Failure, List<OrgCase>>> getMyCases({
+    int page = 1,
+  });
+
+  Future<Either<Failure, void>> createMyCase({
+    required String title,
+    required String description,
+    required int categoryId,
+    required int governorateId,
+    required String priority,
+    List<String> imagePaths = const [],
+  });
+
+  Future<Either<Failure, void>> updateMyCase({
+    required int caseId,
+    required String title,
+    required String description,
+    required int categoryId,
+    required int governorateId,
+    required String priority,
+    List<String> imagePaths = const [],
+  });
+
+  Future<Either<Failure, void>> deleteMyCase(int caseId);
 }

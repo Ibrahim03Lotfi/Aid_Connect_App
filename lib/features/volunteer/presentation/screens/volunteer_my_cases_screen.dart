@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../services/locator.dart';
-import '../../domain/entities/volunteer_case.dart';
+import '../../../organization/domain/entities/org_case.dart';
+import 'volunteer_create_my_case_screen.dart';
 import '../../domain/repositories/volunteer_repository.dart';
 
 // Light of Impact - Warm Hopeful Color System
@@ -23,41 +24,30 @@ class VolunteerMyCasesScreen extends StatefulWidget {
 
 class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
   bool _isLoading = true;
-  List<VolunteerApplication> _applications = [];
-  String? _selectedFilter;
-
-  final List<Map<String, dynamic>> _filters = [
-    {'label': 'الكل', 'value': null},
-    {'label': 'معلق', 'value': 'pending'},
-    {'label': 'مقبول', 'value': 'accepted'},
-    {'label': 'مرفوض', 'value': 'rejected'},
-    {'label': 'مكتمل', 'value': 'completed'},
-  ];
+  List<OrgCase> _cases = [];
 
   @override
   void initState() {
     super.initState();
-    _loadApplications();
+    _loadCases();
   }
 
-  Future<void> _loadApplications() async {
+  Future<void> _loadCases() async {
     setState(() => _isLoading = true);
     
     final repository = locator<VolunteerRepository>();
-    final result = await repository.getMyApplications(
-      status: _selectedFilter,
-    );
+    final result = await repository.getMyCases();
     
     result.fold(
       (failure) => setState(() => _isLoading = false),
-      (applications) => setState(() {
-        _applications = applications;
+      (cases) => setState(() {
+        _cases = cases;
         _isLoading = false;
       }),
     );
   }
 
-  Future<void> _cancelApplication(int applicationId) async {
+  Future<void> _deleteCase(int caseId) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -73,13 +63,13 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
                 color: Colors.red.withAlpha(15),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.cancel_outlined, color: Colors.red),
+              child: const Icon(Icons.delete_outline, color: Colors.red),
             ),
             const SizedBox(width: 12),
-            const Text('إلغاء الطلب'),
+            const Text('حذف الحالة'),
           ],
         ),
-        content: const Text('هل أنت متأكد من إلغاء هذا الطلب؟'),
+        content: const Text('هل أنت متأكد من حذف هذه الحالة؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -109,15 +99,15 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
     if (confirmed != true) return;
 
     final repository = locator<VolunteerRepository>();
-    final result = await repository.cancelApplication(applicationId);
+    final result = await repository.deleteMyCase(caseId);
     
     result.fold(
       (failure) {
         _showSnackBar('فشل: ${failure.message}', Colors.red);
       },
       (_) {
-        _showSnackBar('تم إلغاء الطلب بنجاح', softTeal);
-        _loadApplications();
+        _showSnackBar('تم حذف الحالة بنجاح', softTeal);
+        _loadCases();
       },
     );
   }
@@ -144,7 +134,7 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
         backgroundColor: backgroundOffWhite,
         elevation: 0,
         title: Text(
-          'طلباتي',
+          'حالاتي',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -152,24 +142,47 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: cardWhite,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderLight, width: 1),
+            ),
+            child: IconButton(
+              icon: Icon(Icons.add, color: friendlyBlue, size: 20),
+              onPressed: () async {
+                final created = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const VolunteerCreateMyCaseScreen(),
+                  ),
+                );
+                if (created == true) {
+                  _loadCases();
+                }
+              },
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
-          _buildFilterChips(),
           Expanded(
             child: _isLoading
                 ? _buildLoadingView()
-                : _applications.isEmpty
+                : _cases.isEmpty
                     ? _buildEmptyState()
                     : RefreshIndicator(
-                        onRefresh: _loadApplications,
+                        onRefresh: _loadCases,
                         color: friendlyBlue,
                         backgroundColor: cardWhite,
                         child: ListView.builder(
                           padding: const EdgeInsets.all(20),
-                          itemCount: _applications.length,
+                          itemCount: _cases.length,
                           itemBuilder: (context, index) =>
-                              _buildApplicationCard(_applications[index]),
+                              _buildCaseCard(_cases[index]),
                         ),
                       ),
           ),
@@ -210,7 +223,7 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            'جاري تحميل الطلبات...',
+            'جاري تحميل الحالات...',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -222,68 +235,7 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
     );
   }
 
-  Widget _buildFilterChips() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: _filters.map((filter) {
-            final isSelected = _selectedFilter == filter['value'];
-            final color = _getFilterColor(filter['value']);
-            return Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedFilter = filter['value'] as String?;
-                  });
-                  _loadApplications();
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? color.withAlpha(20) : cardWhite,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? color : borderLight,
-                      width: isSelected ? 1.5 : 1,
-                    ),
-                  ),
-                  child: Text(
-                    filter['label'] as String,
-                    style: TextStyle(
-                      color: isSelected ? color : textMedium,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  Color _getFilterColor(String? value) {
-    switch (value) {
-      case 'pending':
-        return Colors.orange;
-      case 'accepted':
-        return softTeal;
-      case 'rejected':
-        return Colors.red;
-      case 'completed':
-        return friendlyBlue;
-      default:
-        return friendlyBlue;
-    }
-  }
-
-  Widget _buildApplicationCard(VolunteerApplication application) {
+  Widget _buildCaseCard(OrgCase c) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -305,10 +257,31 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
           children: [
             Row(
               children: [
-                _buildStatusBadge(application.status),
+                _buildStatusBadge(c.status),
                 const Spacer(),
+                GestureDetector(
+                  onTap: () async {
+                    final updated = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => VolunteerCreateMyCaseScreen(existing: c),
+                      ),
+                    );
+                    if (updated == true) _loadCases();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: friendlyBlue.withAlpha(12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.edit_outlined,
+                        size: 18, color: friendlyBlue),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Text(
-                  _formatDate(application.appliedAt),
+                  _formatDate(c.createdAt),
                   style: TextStyle(
                     color: textLight,
                     fontSize: 12,
@@ -318,7 +291,7 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              application.caseTitle,
+              c.title,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -328,22 +301,22 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.business_outlined, size: 16, color: textLight),
-                const SizedBox(width: 4),
-                Text(
-                  application.organizationName,
-                  style: TextStyle(color: textMedium, fontSize: 13),
-                ),
-                const SizedBox(width: 16),
                 Icon(Icons.category_outlined, size: 16, color: textLight),
                 const SizedBox(width: 4),
                 Text(
-                  application.category,
+                  c.category,
+                  style: TextStyle(color: textMedium, fontSize: 13),
+                ),
+                const SizedBox(width: 16),
+                Icon(Icons.location_on_outlined, size: 16, color: textLight),
+                const SizedBox(width: 4),
+                Text(
+                  c.governorate,
                   style: TextStyle(color: textMedium, fontSize: 13),
                 ),
               ],
             ),
-            if (application.responseMessage != null && application.isRejected)
+            if (c.isRejected && c.rejectionReason != null)
               Container(
                 margin: const EdgeInsets.only(top: 12),
                 padding: const EdgeInsets.all(12),
@@ -359,43 +332,42 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        application.responseMessage!,
+                        c.rejectionReason!,
                         style: TextStyle(color: Colors.red, fontSize: 13),
                       ),
                     ),
                   ],
                 ),
               ),
-            if (application.isPending)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: GestureDetector(
-                  onTap: () => _cancelApplication(application.id),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withAlpha(15),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red.withAlpha(30), width: 1),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.cancel_outlined, color: Colors.red, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          'إلغاء الطلب',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: GestureDetector(
+                onTap: () => _deleteCase(c.id),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withAlpha(15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.withAlpha(30), width: 1),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'حذف الحالة',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
+            ),
           ],
         ),
       ),
@@ -405,9 +377,8 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
   Widget _buildStatusBadge(String status) {
     final statusConfig = {
       'pending': {'label': 'معلق', 'color': Colors.orange},
-      'accepted': {'label': 'مقبول', 'color': softTeal},
+      'approved': {'label': 'مقبول', 'color': softTeal},
       'rejected': {'label': 'مرفوض', 'color': Colors.red},
-      'completed': {'label': 'مكتمل', 'color': friendlyBlue},
     };
 
     final config = statusConfig[status] ?? statusConfig['pending']!;
@@ -450,7 +421,7 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'لا توجد طلبات',
+            'لا توجد حالات',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -459,7 +430,7 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'ابحث عن حالات متاحة وقدم طلبك',
+            'اضغط + لإضافة حالة جديدة',
             style: TextStyle(
               fontSize: 14,
               color: textMedium,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../config/routes/app_routes.dart';
 import '../../../../services/locator.dart';
-import '../../domain/entities/volunteer_case.dart';
+import '../../../user/domain/entities/case.dart';
 import '../../domain/repositories/volunteer_repository.dart';
 
 // Light of Impact - Warm Hopeful Color System
@@ -23,39 +24,8 @@ class VolunteerAvailableCasesScreen extends StatefulWidget {
 
 class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesScreen> {
   bool _isLoading = true;
-  List<VolunteerCase> _cases = [];
-  String? _selectedCategory;
-  String? _selectedGovernorate;
-
-  final List<String> _categories = [
-    'الكل',
-    'إغاثة عاجلة',
-    'مساعدات غذائية',
-    'علاج طبي',
-    'تعليم',
-    'سكن',
-    'ملابس',
-    'بيئة',
-    'دعم نفسي',
-  ];
-
-  final List<String> _governorates = [
-    'الكل',
-    'دمشق',
-    'حلب',
-    'حمص',
-    'حماة',
-    'اللاذقية',
-    'طرطوس',
-    'درعا',
-    'السويداء',
-    'دير الزور',
-    'الرقة',
-    'الحسكة',
-    'إدلب',
-    'القنيطرة',
-    'ريف دمشق',
-  ];
+  List<Case> _cases = [];
+  final _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -67,10 +37,7 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
     setState(() => _isLoading = true);
     
     final repository = locator<VolunteerRepository>();
-    final result = await repository.getAvailableCases(
-      category: _selectedCategory == 'الكل' ? null : _selectedCategory,
-      governorate: _selectedGovernorate == 'الكل' ? null : _selectedGovernorate,
-    );
+    final result = await repository.getVolunteerFeed(query: _searchController.text);
     
     result.fold(
       (failure) => setState(() => _isLoading = false),
@@ -78,35 +45,6 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
         _cases = cases;
         _isLoading = false;
       }),
-    );
-  }
-
-  Future<void> _applyToCase(int caseId) async {
-    final repository = locator<VolunteerRepository>();
-    final result = await repository.applyToCase(caseId);
-    
-    result.fold(
-      (failure) {
-        _showSnackBar('فشل: ${failure.message}', Colors.red);
-      },
-      (_) {
-        _showSnackBar('تم إرسال طلبك بنجاح!', softTeal);
-        _loadCases();
-      },
-    );
-  }
-
-  void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        margin: const EdgeInsets.all(12),
-      ),
     );
   }
 
@@ -118,7 +56,7 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
         backgroundColor: backgroundOffWhite,
         elevation: 0,
         title: Text(
-          'الحالات المتاحة',
+          'بحث الحالات (المتطوعين)',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -129,7 +67,7 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
       ),
       body: Column(
         children: [
-          _buildFilters(),
+          _buildSearch(),
           Expanded(
             child: _isLoading
                 ? _buildLoadingView()
@@ -195,98 +133,99 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
     );
   }
 
-  Widget _buildFilters() {
+  Widget _buildSearch() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
       child: Column(
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: cardWhite,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: borderLight, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: friendlyBlue.withAlpha(8),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: Row(
-              children: _categories.map((category) {
-                final isSelected = _selectedCategory == category ||
-                    (category == 'الكل' && _selectedCategory == null);
-                return Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedCategory = category == 'الكل' ? null : category;
-                      });
-                      _loadCases();
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected ? friendlyBlue.withAlpha(20) : cardWhite,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? friendlyBlue : borderLight,
-                          width: isSelected ? 1.5 : 1,
-                        ),
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    onSubmitted: (_) => _loadCases(),
+                    decoration: InputDecoration(
+                      hintText: 'ابحث بالعنوان، اسم المتطوع، أو المحافظة...',
+                      hintStyle: TextStyle(color: textLight, fontSize: 14),
+                      prefixIcon: Icon(Icons.search, color: friendlyBlue),
+                      filled: true,
+                      fillColor: softBlueTint,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: borderLight),
                       ),
-                      child: Text(
-                        category,
-                        style: TextStyle(
-                          color: isSelected ? friendlyBlue : textMedium,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: 13,
-                        ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: borderLight),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide:
+                            const BorderSide(color: friendlyBlue, width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
                       ),
                     ),
                   ),
-                );
-              }).toList(),
+                ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: _loadCases,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [friendlyBlue, softTeal],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Text(
+                      'بحث',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: _governorates.map((gov) {
-                final isSelected = _selectedGovernorate == gov ||
-                    (gov == 'الكل' && _selectedGovernorate == null);
-                return Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedGovernorate = gov == 'الكل' ? null : gov;
-                      });
-                      _loadCases();
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected ? softTeal.withAlpha(20) : cardWhite,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? softTeal : borderLight,
-                          width: isSelected ? 1.5 : 1,
-                        ),
-                      ),
-                      child: Text(
-                        gov,
-                        style: TextStyle(
-                          color: isSelected ? softTeal : textMedium,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Icon(Icons.shuffle_outlined, size: 16, color: textMedium),
+              const SizedBox(width: 6),
+              Text(
+                'النتائج تظهر بشكل عشوائي',
+                style: TextStyle(color: textMedium, fontSize: 12),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCaseCard(VolunteerCase volunteerCase) {
+  Widget _buildCaseCard(Case caseItem) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -308,57 +247,30 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
           children: [
             Row(
               children: [
-                _buildPriorityBadge(volunteerCase.priority),
-                const SizedBox(width: 8),
-                if (volunteerCase.isUrgent)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withAlpha(20),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.campaign_outlined, color: Colors.red, size: 14),
-                        SizedBox(width: 4),
-                        Text(
-                          'عاجل',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                _buildPriorityBadge(caseItem.priority),
                 const Spacer(),
-                Text(
-                  volunteerCase.organizationName,
-                  style: TextStyle(
-                    color: textMedium,
-                    fontSize: 12,
+                if (caseItem.organizationName != null)
+                  Text(
+                    caseItem.organizationName!,
+                    style: TextStyle(color: textMedium, fontSize: 12),
                   ),
-                ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
-              volunteerCase.title,
+              caseItem.title,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: textDark,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
             Text(
-              volunteerCase.description,
-              style: TextStyle(
-                fontSize: 14,
-                color: textMedium,
-              ),
+              caseItem.description,
+              style: TextStyle(fontSize: 14, color: textMedium),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -367,47 +279,37 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
               children: [
                 Icon(Icons.location_on_outlined, size: 16, color: textLight),
                 const SizedBox(width: 4),
-                Text(volunteerCase.governorate, style: TextStyle(color: textMedium, fontSize: 13)),
+                Text(caseItem.governorate,
+                    style: TextStyle(color: textMedium, fontSize: 13)),
                 const SizedBox(width: 16),
                 Icon(Icons.category_outlined, size: 16, color: textLight),
                 const SizedBox(width: 4),
-                Text(volunteerCase.category, style: TextStyle(color: textMedium, fontSize: 13)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Divider(),
-            Row(
-              children: [
-                Icon(Icons.people_outlined, size: 18, color: textLight),
-                const SizedBox(width: 4),
-                Text(
-                  '${volunteerCase.volunteersApplied}/${volunteerCase.volunteersNeeded} متطوع',
-                  style: TextStyle(
-                    color: volunteerCase.isFull ? Colors.red : softTeal,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                ),
+                Text(caseItem.category,
+                    style: TextStyle(color: textMedium, fontSize: 13)),
                 const Spacer(),
                 GestureDetector(
-                  onTap: volunteerCase.isFull ? null : () => _applyToCase(volunteerCase.id),
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.caseDetails,
+                      arguments: {'caseId': caseItem.id},
+                    );
+                  },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      gradient: volunteerCase.isFull
-                          ? null
-                          : const LinearGradient(
-                              colors: [friendlyBlue, softTeal],
-                            ),
-                      color: volunteerCase.isFull ? borderLight : null,
+                      gradient: const LinearGradient(
+                        colors: [friendlyBlue, softTeal],
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(
-                      volunteerCase.isFull ? 'اكتمل' : 'تقدم',
+                    child: const Text(
+                      'عرض',
                       style: TextStyle(
-                        fontSize: 13,
+                        color: Colors.white,
                         fontWeight: FontWeight.w700,
-                        color: volunteerCase.isFull ? textLight : Colors.white,
+                        fontSize: 13,
                       ),
                     ),
                   ),
@@ -478,5 +380,11 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 }

@@ -48,6 +48,12 @@ Route::middleware('api.token')->group(function () {
     Route::post('/volunteer/apply/{caseId}', [VolunteerController::class, 'apply']);
     Route::get('/volunteer/applications', [VolunteerController::class, 'myApplications']);
     Route::delete('/volunteer/applications/{id}', [VolunteerController::class, 'cancelApplication']);
+    Route::get('/volunteer/dashboard', [VolunteerController::class, 'dashboard']);
+    Route::get('/volunteer/feed', [VolunteerController::class, 'volunteerCasesFeed']);
+    Route::get('/volunteer/my-cases', [VolunteerController::class, 'myAidCases']);
+    Route::post('/volunteer/my-cases', [VolunteerController::class, 'storeAidCase']);
+    Route::put('/volunteer/my-cases/{id}', [VolunteerController::class, 'updateAidCase']);
+    Route::delete('/volunteer/my-cases/{id}', [VolunteerController::class, 'destroyAidCase']);
     Route::get('/volunteer/profile', [VolunteerController::class, 'profile']);
     Route::put('/volunteer/profile', [VolunteerController::class, 'updateProfile']);
 
