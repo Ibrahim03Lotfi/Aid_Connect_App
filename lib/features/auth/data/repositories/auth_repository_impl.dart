@@ -16,8 +16,8 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     required DioClient dioClient,
     required LocalStorageService localStorage,
-  })  : _dioClient = dioClient,
-        _localStorage = localStorage;
+  }) : _dioClient = dioClient,
+       _localStorage = localStorage;
 
   @override
   Future<Either<Failure, User>> login({
@@ -25,22 +25,29 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
     required String role,
   }) async {
-    // STATIC/MOCK LOGIN - accepts any credentials, immediate response
-    final mockUser = UserModel(
-      id: 1,
-      name: role == UserRoles.user ? 'مستخدم تجريبي' : 
-            role == UserRoles.organization ? 'منظمة تجريبية' : 'متطوع تجريبي',
-      email: email.isNotEmpty ? email : 'demo@example.com',
-      phone: '0123456789',
-      role: role,
-      isActive: true,
-    );
-    
-    await _localStorage.saveToken('mock_token_12345');
-    await _localStorage.saveUserData(jsonEncode(mockUser.toJson()));
-    await _localStorage.saveRole(role);
-    
-    return Right(mockUser);
+    try {
+      final response = await _dioClient.post<Map<String, dynamic>>(
+        '/auth/login',
+        data: {'email': email, 'password': password, 'role': role},
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+
+      final data = response.data!;
+      final token = data['token'] as String?;
+      if (token == null) {
+        return Left(ServerFailure('لم يتم استلام رمز المصادقة'));
+      }
+
+      await _localStorage.saveToken(token);
+      await _localStorage.saveUserData(jsonEncode(data));
+      await _localStorage.saveRole(data['role'] as String? ?? role);
+
+      return Right(UserModel.fromJson(data));
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (e) {
+      return Left(ServerFailure('حدث خطأ أثناء تسجيل الدخول'));
+    }
   }
 
   @override
@@ -50,26 +57,33 @@ class AuthRepositoryImpl implements AuthRepository {
     required String phone,
     required String password,
   }) async {
-    // STATIC/MOCK REGISTER - accepts any data
     try {
-      await Future.delayed(const Duration(milliseconds: 800));
-      
-      final mockUser = UserModel(
-        id: 1,
-        name: name.isNotEmpty ? name : 'مستخدم جديد',
-        email: email.isNotEmpty ? email : 'new@example.com',
-        phone: phone.isNotEmpty ? phone : '0123456789',
-        role: UserRoles.user,
-        isActive: true,
+      final response = await _dioClient.post<Map<String, dynamic>>(
+        '/auth/register',
+        data: {
+          'name': name,
+          'email': email,
+          'phone': phone,
+          'password': password,
+        },
+        fromJsonT: (data) => data as Map<String, dynamic>,
       );
-      
-      await _localStorage.saveToken('mock_token_register');
-      await _localStorage.saveUserData(jsonEncode(mockUser.toJson()));
-      await _localStorage.saveRole(UserRoles.user);
-      
-      return Right(mockUser);
+
+      final data = response.data!;
+      final token = data['token'] as String?;
+      if (token == null) {
+        return Left(ServerFailure('لم يتم استلام رمز المصادقة'));
+      }
+
+      await _localStorage.saveToken(token);
+      await _localStorage.saveUserData(jsonEncode(data));
+      await _localStorage.saveRole(data['role'] as String? ?? UserRoles.user);
+
+      return Right(UserModel.fromJson(data));
+    } on Failure catch (failure) {
+      return Left(failure);
     } catch (e) {
-      return Left(ServerFailure('خطأ في إنشاء الحساب'));
+      return Left(ServerFailure('حدث خطأ أثناء إنشاء الحساب'));
     }
   }
 
@@ -78,10 +92,7 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final token = await _localStorage.getToken();
       if (token != null) {
-        await _dioClient.post(
-          '/auth/logout',
-          fromJsonT: (data) => data,
-        );
+        await _dioClient.post('/auth/logout', fromJsonT: (data) => data);
       }
       await _localStorage.clearAll();
       return const Right(null);
@@ -99,29 +110,47 @@ class AuthRepositoryImpl implements AuthRepository {
     required String description,
     required String registrationNumber,
   }) async {
-    // STATIC/MOCK - just simulate success
     try {
-      await Future.delayed(const Duration(milliseconds: 800));
+      await _dioClient.post(
+        '/organization/request',
+        data: {
+          'name': name,
+          'email': email,
+          'phone': phone,
+          'address': address,
+          'description': description,
+          'registration_number': registrationNumber,
+        },
+        fromJsonT: (data) => data,
+      );
       return const Right(null);
+    } on Failure catch (failure) {
+      return Left(failure);
     } catch (e) {
-      return Left(ServerFailure('خطأ في إرسال الطلب'));
+      return Left(ServerFailure('حدث خطأ أثناء إرسال الطلب'));
     }
   }
 
   @override
   Future<Either<Failure, User?>> checkAuthStatus() async {
-    // STATIC/MOCK - just check local storage
     try {
       final token = await _localStorage.getToken();
-      final userData = _localStorage.getUserData();
-
-      if (token == null || userData == null) {
+      if (token == null) {
         return const Right(null);
       }
 
-      // Return mock user from local storage (no API call)
-      final userModel = UserModel.fromJson(jsonDecode(userData));
-      return Right(userModel);
+      final response = await _dioClient.get<Map<String, dynamic>>(
+        '/auth/me',
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+
+      if (response.data != null) {
+        return Right(UserModel.fromJson(response.data!));
+      }
+      return const Right(null);
+    } on Failure catch (failure) {
+      await _localStorage.clearAll();
+      return Left(failure);
     } catch (e) {
       await _localStorage.clearAll();
       return const Right(null);

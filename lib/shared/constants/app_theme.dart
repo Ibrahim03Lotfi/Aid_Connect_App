@@ -248,7 +248,7 @@ const Curve curveStandard = Curves.easeInOut;
 const Curve curveEntrance = Curves.decelerate;
 
 /// Exit easing (accelerate)
-const Curve curveExit = Curves.accelerate;
+const Curve curveExit = Curves.easeIn;
 
 /// Bounce easing
 const Curve curveBounce = Curves.elasticOut;
@@ -284,7 +284,7 @@ class AppTheme {
       titleTextStyle: AppTextStyles.h4,
       iconTheme: const IconThemeData(color: friendlyBlue),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 0,
       color: cardWhite,
       shape: RoundedRectangleBorder(
