@@ -41,15 +41,7 @@ class OrgCasesView extends StatefulWidget {
 }
 
 class _OrgCasesViewState extends State<OrgCasesView> {
-  String? _selectedFilter;
   final ScrollController _scrollController = ScrollController();
-
-  final List<Map<String, dynamic>> _filters = [
-    {'label': 'الكل', 'value': null},
-    {'label': 'معلق', 'value': 'pending'},
-    {'label': 'مقبول', 'value': 'approved'},
-    {'label': 'مرفوض', 'value': 'rejected'},
-  ];
 
   @override
   void initState() {
@@ -105,7 +97,6 @@ class _OrgCasesViewState extends State<OrgCasesView> {
       ),
       body: Column(
         children: [
-          _buildFilterChips(),
           Expanded(
             child: BlocConsumer<OrgCasesBloc, OrgCasesState>(
               listener: (context, state) {
@@ -146,7 +137,7 @@ class _OrgCasesViewState extends State<OrgCasesView> {
                     onRefresh: () async {
                       context
                           .read<OrgCasesBloc>()
-                          .add(RefreshOrgCasesEvent(status: _selectedFilter));
+                          .add(const RefreshOrgCasesEvent());
                     },
                     color: friendlyBlue,
                     backgroundColor: cardWhite,
@@ -243,70 +234,7 @@ class _OrgCasesViewState extends State<OrgCasesView> {
     );
   }
 
-  Widget _buildFilterChips() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: _filters.map((filter) {
-            final isSelected = _selectedFilter == filter['value'];
-            final isAll = filter['value'] == null;
-            final color = isAll
-                ? friendlyBlue
-                : _getFilterColor(filter['value'] as String?);
-            return Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedFilter = filter['value'];
-                  });
-                  context.read<OrgCasesBloc>().add(
-                    FilterByStatusEvent(status: _selectedFilter),
-                  );
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? color.withAlpha(20) : cardWhite,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? color : borderLight,
-                      width: isSelected ? 1.5 : 1,
-                    ),
-                  ),
-                  child: Text(
-                    filter['label'] as String,
-                    style: TextStyle(
-                      color: isSelected ? color : textMedium,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  Color _getFilterColor(String? status) {
-    switch (status) {
-      case 'pending':
-        return Colors.orange;
-      case 'approved':
-        return softTeal;
-      case 'rejected':
-        return Colors.red;
-      default:
-        return friendlyBlue;
-    }
-  }
-
+  
   Widget _buildCaseCard(OrgCase orgCase) {
     return GestureDetector(
       onTap: () {
@@ -341,6 +269,28 @@ class _OrgCasesViewState extends State<OrgCasesView> {
                   const SizedBox(width: 8),
                   _buildPriorityBadge(orgCase.priority),
                   const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.createCase,
+                        arguments: {'existing': orgCase},
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: friendlyBlue.withAlpha(15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.edit_outlined,
+                        color: friendlyBlue,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () => _showDeleteConfirmation(orgCase),
                     child: Container(
@@ -621,7 +571,7 @@ class _OrgCasesViewState extends State<OrgCasesView> {
             onTap: () {
               context
                   .read<OrgCasesBloc>()
-                  .add(FetchOrgCasesEvent(status: _selectedFilter));
+                  .add(const FetchOrgCasesEvent());
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

@@ -20,7 +20,9 @@ const Color cardWhite = Color(0xFFFFFFFF);
 const Color borderLight = Color(0xFFE5E7EB);
 
 class OrgDashboardScreen extends StatelessWidget {
-  const OrgDashboardScreen({super.key});
+  final String? organizationName;
+  
+  const OrgDashboardScreen({this.organizationName});
 
   @override
   Widget build(BuildContext context) {
@@ -43,13 +45,19 @@ class _DashboardView extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: backgroundOffWhite,
         elevation: 0,
-        title: Text(
-          'لوحة تحكم المنظمة',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: textDark,
-          ),
+        title: BlocBuilder<OrgDashboardBloc, OrgDashboardState>(
+          builder: (context, state) {
+            return Text(
+              state is OrgDashboardLoaded
+                  ? 'لوحة تحكم ${state.organization.name}'
+                  : 'لوحة تحكم المنظمة',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: textDark,
+              ),
+            );
+          },
         ),
         centerTitle: true,
         actions: [

@@ -9,39 +9,25 @@ abstract class OrgCasesEvent extends Equatable {
 
 class FetchOrgCasesEvent extends OrgCasesEvent {
   final int page;
-  final String? status;
 
-  const FetchOrgCasesEvent({this.page = 1, this.status});
+  const FetchOrgCasesEvent({this.page = 1});
 
   @override
-  List<Object?> get props => [page, status];
+  List<Object?> get props => [page];
 }
 
 class RefreshOrgCasesEvent extends OrgCasesEvent {
-  final String? status;
-
-  const RefreshOrgCasesEvent({this.status});
+  const RefreshOrgCasesEvent();
 
   @override
-  List<Object?> get props => [status];
+  List<Object?> get props => [];
 }
 
 class LoadMoreOrgCasesEvent extends OrgCasesEvent {
-  final String? status;
-
-  const LoadMoreOrgCasesEvent({this.status});
+  const LoadMoreOrgCasesEvent();
 
   @override
-  List<Object?> get props => [status];
-}
-
-class FilterByStatusEvent extends OrgCasesEvent {
-  final String? status;
-
-  const FilterByStatusEvent({this.status});
-
-  @override
-  List<Object?> get props => [status];
+  List<Object?> get props => [];
 }
 
 class DeleteCaseEvent extends OrgCasesEvent {

@@ -7,7 +7,6 @@ import 'org_cases_state.dart';
 class OrgCasesBloc extends Bloc<OrgCasesEvent, OrgCasesState> {
   final OrganizationRepository _repository;
   int _currentPage = 1;
-  String? _currentFilter;
 
   OrgCasesBloc({required OrganizationRepository repository})
       : _repository = repository,
@@ -15,7 +14,6 @@ class OrgCasesBloc extends Bloc<OrgCasesEvent, OrgCasesState> {
     on<FetchOrgCasesEvent>(_onFetchCases);
     on<RefreshOrgCasesEvent>(_onRefreshCases);
     on<LoadMoreOrgCasesEvent>(_onLoadMoreCases);
-    on<FilterByStatusEvent>(_onFilterByStatus);
     on<DeleteCaseEvent>(_onDeleteCase);
   }
 
@@ -26,11 +24,9 @@ class OrgCasesBloc extends Bloc<OrgCasesEvent, OrgCasesState> {
     emit(const OrgCasesLoading());
 
     _currentPage = event.page;
-    _currentFilter = event.status;
 
     final result = await _repository.getOrganizationCases(
       page: _currentPage,
-      status: _currentFilter,
     );
 
     result.fold(
@@ -39,7 +35,6 @@ class OrgCasesBloc extends Bloc<OrgCasesEvent, OrgCasesState> {
         cases: cases,
         currentPage: _currentPage,
         hasMore: cases.length >= 10,
-        filterStatus: _currentFilter,
       )),
     );
   }
@@ -49,11 +44,9 @@ class OrgCasesBloc extends Bloc<OrgCasesEvent, OrgCasesState> {
     Emitter<OrgCasesState> emit,
   ) async {
     _currentPage = 1;
-    _currentFilter = event.status;
 
     final result = await _repository.getOrganizationCases(
       page: 1,
-      status: _currentFilter,
     );
 
     result.fold(
@@ -62,7 +55,6 @@ class OrgCasesBloc extends Bloc<OrgCasesEvent, OrgCasesState> {
         cases: cases,
         currentPage: 1,
         hasMore: cases.length >= 10,
-        filterStatus: _currentFilter,
       )),
     );
   }
@@ -78,12 +70,10 @@ class OrgCasesBloc extends Bloc<OrgCasesEvent, OrgCasesState> {
       emit(OrgCasesLoadingMore(
         currentCases: currentState.cases,
         nextPage: currentState.currentPage + 1,
-        filterStatus: _currentFilter,
       ));
 
       final result = await _repository.getOrganizationCases(
         page: currentState.currentPage + 1,
-        status: _currentFilter,
       );
 
       result.fold(
@@ -94,36 +84,10 @@ class OrgCasesBloc extends Bloc<OrgCasesEvent, OrgCasesState> {
             cases: [...currentState.cases, ...newCases],
             currentPage: _currentPage,
             hasMore: newCases.length >= 10,
-            filterStatus: _currentFilter,
           ));
         },
       );
     }
-  }
-
-  Future<void> _onFilterByStatus(
-    FilterByStatusEvent event,
-    Emitter<OrgCasesState> emit,
-  ) async {
-    emit(const OrgCasesLoading());
-
-    _currentPage = 1;
-    _currentFilter = event.status;
-
-    final result = await _repository.getOrganizationCases(
-      page: 1,
-      status: _currentFilter,
-    );
-
-    result.fold(
-      (failure) => emit(OrgCasesError(_mapFailureToMessage(failure))),
-      (cases) => emit(OrgCasesLoaded(
-        cases: cases,
-        currentPage: 1,
-        hasMore: cases.length >= 10,
-        filterStatus: _currentFilter,
-      )),
-    );
   }
 
   Future<void> _onDeleteCase(
@@ -147,7 +111,6 @@ class OrgCasesBloc extends Bloc<OrgCasesEvent, OrgCasesState> {
             cases: updatedCases,
             currentPage: currentState.currentPage,
             hasMore: currentState.hasMore,
-            filterStatus: currentState.filterStatus,
           ));
           emit(OrgCaseDeleted(event.caseId, 'تم حذف الحالة بنجاح'));
         },

@@ -7,7 +7,6 @@ import '../entities/org_profile.dart';
 abstract class OrganizationRepository {
   Future<Either<Failure, List<OrgCase>>> getOrganizationCases({
     int page = 1,
-    String? status,
   });
 
   Future<Either<Failure, OrgCase>> getCaseDetails(int caseId);

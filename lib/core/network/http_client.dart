@@ -205,22 +205,35 @@ class HttpClient {
       req.fields.addAll(fields);
       req.files.addAll(files);
 
-      final streamed = await req.send().timeout(
-        Duration(seconds: AppConstants.connectionTimeout),
-      );
-      final response = await http.Response.fromStream(streamed);
+      try {
+        final streamed = await req.send().timeout(
+          Duration(seconds: AppConstants.connectionTimeout),
+        );
+        final response = await http.Response.fromStream(streamed);
 
-      final decoded = response.body.isNotEmpty
-          ? jsonDecode(response.body)
-          : <String, dynamic>{};
-      final body = decoded is Map<String, dynamic>
-          ? decoded
-          : <String, dynamic>{'data': decoded};
+        if (kDebugMode) {
+          _logger.i('Response status: ${response.statusCode}');
+          _logger.i('Response body: ${response.body}');
+        }
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return ApiResponse.fromJson(body, fromJsonT);
+        final decoded = response.body.isNotEmpty
+            ? jsonDecode(response.body)
+            : <String, dynamic>{};
+        final body = decoded is Map<String, dynamic>
+            ? decoded
+            : <String, dynamic>{'data': decoded};
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return ApiResponse.fromJson(body, fromJsonT);
+        }
+
+        throw _mapHttpError(response.statusCode, body);
+      } catch (e) {
+        if (kDebugMode) {
+          _logger.e('Error processing multipart response: $e');
+        }
+        throw UnknownFailure('Failed to process response: ${e.toString()}');
       }
-      throw _mapHttpError(response.statusCode, body);
     } on TimeoutException {
       throw const TimeoutFailure('انتهت مهلة الاتصال، يرجى المحاولة مرة أخرى');
     } on Failure {

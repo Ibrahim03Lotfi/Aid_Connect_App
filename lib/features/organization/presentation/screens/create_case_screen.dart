@@ -86,10 +86,17 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
   }
 
   Future<void> _pickImages() async {
-    final images = await _picker.pickMultiImage(imageQuality: 85);
-    if (!mounted) return;
-    if (images.isNotEmpty) {
-      setState(() => _selectedImages.addAll(images));
+    try {
+      final images = await _picker.pickMultiImage(imageQuality: 85);
+      if (!mounted) return;
+      if (images.isNotEmpty) {
+        setState(() => _selectedImages.addAll(images));
+        print('DEBUG: Picked ${images.length} images');
+      }
+    } catch (e) {
+      print('DEBUG: Error picking images: $e');
+      if (!mounted) return;
+      _toast('فشل في اختيار الصور: ${e.toString()}', Colors.red);
     }
   }
 
@@ -98,56 +105,110 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (_categoryId == null || _governorateId == null) {
-      _toast('يرجى اختيار القسم والمحافظة', Colors.orange);
-      return;
-    }
+    try {
+      if (!(_formKey.currentState?.validate() ?? false)) return;
+      if (_categoryId == null || _governorateId == null) {
+        _toast('يرجى اختيار القسم والمحافظة', Colors.orange);
+        return;
+      }
 
-    setState(() => _submitting = true);
-    final repo = locator<OrganizationRepository>();
-    final imagePaths = _selectedImages.map((e) => e.path).toList();
+      setState(() => _submitting = true);
+      final repo = locator<OrganizationRepository>();
 
-    final isEdit = widget.existing != null;
-    final result = isEdit
-        ? await repo.updateCase(
-            caseId: widget.existing!.id,
-            title: _titleController.text.trim(),
-            description: _descriptionController.text.trim(),
-            priority: _priority,
-            images: imagePaths,
-          )
-        : await repo.createCase(
-            title: _titleController.text.trim(),
-            description: _descriptionController.text.trim(),
-            categoryId: _categoryId!,
-            governorateId: _governorateId!,
-            priority: _priority,
-            images: imagePaths,
+      // Safely extract image paths
+      List<String> imagePaths = [];
+      for (final image in _selectedImages) {
+        try {
+          final path = image.path;
+          print('DEBUG: Image path: $path');
+          if (path.isNotEmpty) {
+            imagePaths.add(path);
+          }
+        } catch (e) {
+          print('DEBUG: Error getting image path: $e');
+        }
+      }
+
+      print('DEBUG: Submitting case with ${imagePaths.length} images');
+      print('DEBUG: Category ID: $_categoryId, Governorate ID: $_governorateId');
+      print('DEBUG: Title: ${_titleController.text.trim()}');
+
+      final isEdit = widget.existing != null;
+      final result = isEdit
+          ? await repo.updateCase(
+              caseId: widget.existing!.id,
+              title: _titleController.text.trim(),
+              description: _descriptionController.text.trim(),
+              priority: _priority,
+              images: imagePaths,
+            )
+          : await repo.createCase(
+              title: _titleController.text.trim(),
+              description: _descriptionController.text.trim(),
+              categoryId: _categoryId!,
+              governorateId: _governorateId!,
+              priority: _priority,
+              images: imagePaths,
+            );
+
+      if (!mounted) return;
+      setState(() => _submitting = false);
+
+      result.fold((f) {
+        print('DEBUG: Case creation failed: ${f.message}');
+        _toast('فشل: ${f.message}', Colors.red);
+      }, (_) {
+        if (mounted) {
+          _toast(
+            isEdit ? 'تم تعديل الحالة' : 'تم نشر الحالة بنجاح',
+            softTeal,
           );
-
-    if (!mounted) return;
-    setState(() => _submitting = false);
-
-    result.fold((f) => _toast('فشل: ${f.message}', Colors.red), (_) {
-      _toast(
-        isEdit ? 'تم تعديل الحالة' : 'تم إنشاء الحالة (قيد المراجعة)',
-        softTeal,
-      );
-      Navigator.pop(context, true);
-    });
+          
+          try {
+            Navigator.pop(context);
+          } catch (e) {
+            _toast('حدث خطأ غير متوقع: ${e.toString()}', Colors.red);
+          }
+        } else {
+          print('DEBUG: Widget not mounted, cannot navigate');
+        }
+      });
+    } catch (e, stackTrace) {
+      print('DEBUG: Unhandled exception in _submit: $e');
+      print('DEBUG: Stack trace: $stackTrace');
+      
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      
+      _toast('حدث خطأ غير متوقع: ${e.toString()}', Colors.red);
+    }
   }
 
   void _toast(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(12),
-      ),
-    );
+    try {
+      print('DEBUG: _toast called with message: $msg');
+      print('DEBUG: Context is valid: ${context.mounted}');
+      
+      if (!context.mounted) {
+        print('DEBUG: Context not mounted, skipping toast');
+        return;
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: color,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(12),
+        ),
+      );
+      
+      print('DEBUG: Toast shown successfully');
+    } catch (e, stackTrace) {
+      print('DEBUG: Error in _toast method: $e');
+      print('DEBUG: Toast stack trace: $stackTrace');
+    }
   }
 
   @override

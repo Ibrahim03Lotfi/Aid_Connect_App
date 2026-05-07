@@ -23,9 +23,10 @@ class OrgMainScreen extends StatefulWidget {
 
 class _OrgMainScreenState extends State<OrgMainScreen> {
   int _currentIndex = 0;
+  String? _organizationName;
 
-  final List<Widget> _screens = const [
-    OrgDashboardScreen(),
+  final List<Widget> _screens = [
+    OrgDashboardScreen(organizationName: _organizationName),
     OrgCasesScreen(),
     CreateCaseScreen(),
     OrgProfileScreen(),
@@ -36,11 +37,6 @@ class _OrgMainScreenState extends State<OrgMainScreen> {
       'icon': Icons.dashboard_outlined,
       'activeIcon': Icons.dashboard,
       'label': 'الرئيسية',
-    },
-    {
-      'icon': Icons.folder_outlined,
-      'activeIcon': Icons.folder,
-      'label': 'الحالات',
     },
     {
       'icon': Icons.add_circle_outline,

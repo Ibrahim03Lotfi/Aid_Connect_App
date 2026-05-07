@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\AidCase;
 use App\Models\User;
 use App\Models\VolunteerOpportunity;
+use App\Models\Governorate;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -51,6 +52,13 @@ class DemoDataSeeder extends Seeder
         });
 
         $primaryOrganization = $organizations->first();
+        
+        // Get governorates dynamically
+        $governorates = Governorate::all();
+        $damascus = $governorates->where('name', 'دمشق')->first();
+        $aleppo = $governorates->where('name', 'حلب')->first();
+        $homs = $governorates->where('name', 'حمص')->first();
+        $hama = $governorates->where('name', 'حماة')->first();
 
         $cases = [
             [
@@ -59,7 +67,7 @@ class DemoDataSeeder extends Seeder
                 'status' => 'approved',
                 'priority' => 'high',
                 'category_id' => 1,
-                'governorate_id' => 1,
+                'governorate_id' => $damascus->id,
                 'organization_id' => $primaryOrganization->id,
                 'views' => 120,
             ],
@@ -69,7 +77,7 @@ class DemoDataSeeder extends Seeder
                 'status' => 'approved',
                 'priority' => 'urgent',
                 'category_id' => 3,
-                'governorate_id' => 2,
+                'governorate_id' => $aleppo->id,
                 'organization_id' => $primaryOrganization->id,
                 'views' => 230,
             ],
@@ -79,7 +87,7 @@ class DemoDataSeeder extends Seeder
                 'status' => 'approved',
                 'priority' => 'medium',
                 'category_id' => 2,
-                'governorate_id' => 3,
+                'governorate_id' => $homs->id,
                 'organization_id' => $primaryOrganization->id,
                 'views' => 89,
             ],
@@ -89,7 +97,7 @@ class DemoDataSeeder extends Seeder
                 'status' => 'approved',
                 'priority' => 'medium',
                 'category_id' => 4,
-                'governorate_id' => 1,
+                'governorate_id' => $damascus->id,
                 'organization_id' => $primaryOrganization->id,
                 'views' => 156,
             ],
@@ -99,7 +107,7 @@ class DemoDataSeeder extends Seeder
                 'status' => 'approved',
                 'priority' => 'high',
                 'category_id' => 5,
-                'governorate_id' => 4,
+                'governorate_id' => $hama->id,
                 'organization_id' => $primaryOrganization->id,
                 'views' => 67,
             ],

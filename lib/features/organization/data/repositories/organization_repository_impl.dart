@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:http/http.dart' as http;
 import '../../../../core/errors/failures.dart';
 import '../../../../core/network/http_client.dart';
 import '../../domain/entities/org_case.dart';
@@ -15,13 +16,9 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
   @override
   Future<Either<Failure, List<OrgCase>>> getOrganizationCases({
     int page = 1,
-    String? status,
   }) async {
     try {
       final query = <String, dynamic>{'page': page, 'per_page': 10};
-      if (status != null && status.isNotEmpty) {
-        query['status'] = status;
-      }
       final response = await _httpClient.get<List<dynamic>>(
         '/organization/cases',
         queryParameters: query,
@@ -67,24 +64,35 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
     List<String>? attachments,
   }) async {
     try {
-      await _httpClient.post(
+      List<http.MultipartFile> files = [];
+      
+      // Only create file objects if there are actual image paths
+      if (images.isNotEmpty) {
+        final fileFutures = images
+            .where((path) => path.isNotEmpty)
+            .map((p) => http.MultipartFile.fromPath('images[]', p))
+            .toList();
+        files = await Future.wait(fileFutures);
+      }
+      
+      await _httpClient.postMultipart(
         '/organization/cases',
-        data: {
+        fields: {
           'title': title,
           'description': description,
-          'category_id': categoryId,
-          'governorate_id': governorateId,
+          'category_id': categoryId.toString(),
+          'governorate_id': governorateId.toString(),
           'priority': priority,
-          'images': images,
-          'attachments': attachments ?? <String>[],
+          if (attachments != null) 'attachments': attachments.join(','),
         },
+        files: files,
         fromJsonT: (data) => data,
       );
       return const Right(null);
     } on Failure catch (failure) {
       return Left(failure);
-    } catch (_) {
-      return Left(ServerFailure('فشل في إنشاء الحالة'));
+    } catch (e) {
+      return Left(ServerFailure('فشل في إنشاء الحالة: ${e.toString()}'));
     }
   }
 
@@ -97,22 +105,32 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
     List<String>? images,
   }) async {
     try {
-      final payload = <String, dynamic>{};
-      if (title != null) payload['title'] = title;
-      if (description != null) payload['description'] = description;
-      if (priority != null) payload['priority'] = priority;
-      if (images != null) payload['images'] = images;
-
-      await _httpClient.put(
+      List<http.MultipartFile> files = [];
+      
+      // Only create file objects if there are actual image paths
+      if (images != null && images.isNotEmpty) {
+        final fileFutures = images
+            .where((path) => path.isNotEmpty)
+            .map((p) => http.MultipartFile.fromPath('images[]', p))
+            .toList();
+        files = await Future.wait(fileFutures);
+      }
+      
+      await _httpClient.putMultipart(
         '/organization/cases/$caseId',
-        data: payload,
+        fields: {
+          if (title != null) 'title': title,
+          if (description != null) 'description': description,
+          if (priority != null) 'priority': priority,
+        },
+        files: files,
         fromJsonT: (data) => data,
       );
       return const Right(null);
     } on Failure catch (failure) {
       return Left(failure);
-    } catch (_) {
-      return Left(ServerFailure('فشل في تحديث الحالة'));
+    } catch (e) {
+      return Left(ServerFailure('فشل في تحديث الحالة: ${e.toString()}'));
     }
   }
 

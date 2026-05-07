@@ -5,9 +5,31 @@ namespace App\Http\Controllers\Api;
 use App\Models\AidCase;
 use App\Models\OrganizationRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class OrganizationController extends ApiController
 {
+    private function toAbsoluteUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return $path;
+        }
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        $normalizedPath = str_starts_with($path, '/') ? $path : '/'.$path;
+        return request()->getSchemeAndHttpHost().$normalizedPath;
+    }
+
+    private function normalizeImagePath(string $urlOrPath): string
+    {
+        $path = parse_url($urlOrPath, PHP_URL_PATH) ?: $urlOrPath;
+        if (! str_starts_with($path, '/')) {
+            $path = '/'.$path;
+        }
+        return $path;
+    }
+
     public function myCases(Request $request)
     {
         if ($request->user()->role !== 'organization') {
@@ -35,6 +57,10 @@ class OrganizationController extends ApiController
                 'donations_count' => 0,
                 'created_at' => $case->created_at->toIso8601String(),
                 'rejection_reason' => $case->rejection_reason,
+                'thumbnail' => $this->toAbsoluteUrl($case->thumbnail),
+                'images' => $case->images->map(function ($image) {
+                    return $this->toAbsoluteUrl($image->url);
+                })->toArray(),
             ];
         });
 
@@ -65,7 +91,10 @@ class OrganizationController extends ApiController
             'donations_count' => 0,
             'created_at' => $case->created_at->toIso8601String(),
             'rejection_reason' => $case->rejection_reason,
-            'images' => $case->images->pluck('url')->toArray(),
+            'thumbnail' => $this->toAbsoluteUrl($case->thumbnail),
+            'images' => $case->images->map(function ($image) {
+                return $this->toAbsoluteUrl($image->url);
+            })->toArray(),
             'attachments' => $case->attachments,
         ]);
     }
@@ -82,20 +111,46 @@ class OrganizationController extends ApiController
             'category_id' => 'required|exists:categories,id',
             'governorate_id' => 'required|exists:governorates,id',
             'priority' => 'required|in:low,medium,high,urgent',
-            'images' => 'sometimes|array',
             'attachments' => 'sometimes|array',
+            'images' => 'sometimes|array',
+            'images.*' => 'image|max:5120',
         ]);
 
         $case = AidCase::create([
-            ...$validated,
+            ...collect($validated)->except(['images'])->toArray(),
             'organization_id' => $request->user()->id,
-            'status' => 'pending',
+            'status' => 'approved',
             'views' => 0,
         ]);
 
-        if ($request->has('images')) {
-            foreach ($request->images as $index => $url) {
+        $uploadedImages = $request->file('images', []);
+        if (! is_array($uploadedImages)) {
+            $uploadedImages = [];
+        }
+        if (! empty($uploadedImages)) {
+            $urls = [];
+            foreach ($uploadedImages as $index => $file) {
+                $path = $file->store('case-images', 'public');
+                $url = Storage::url($path);
+                $urls[] = $url;
                 $case->images()->create(['url' => $url, 'order' => $index]);
+            }
+            if (! empty($urls)) {
+                $case->thumbnail = $urls[0];
+                $case->save();
+            }
+        }
+
+        // Handle image URLs passed as array (for Flutter compatibility)
+        if ($request->has('images') && is_array($request->images)) {
+            foreach ($request->images as $index => $url) {
+                if (is_string($url)) {
+                    $case->images()->create(['url' => $url, 'order' => $index]);
+                }
+            }
+            if (! empty($request->images) && ! $case->thumbnail) {
+                $case->thumbnail = $request->images[0];
+                $case->save();
             }
         }
 
@@ -118,17 +173,46 @@ class OrganizationController extends ApiController
             'title' => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
             'priority' => 'sometimes|in:low,medium,high,urgent',
+            'existing_images' => 'sometimes|array',
+            'existing_images.*' => 'string',
             'images' => 'sometimes|array',
+            'images.*' => 'image|max:5120',
         ]);
 
-        $case->update($validated);
+        $case->update(collect($validated)->except(['images', 'existing_images'])->toArray());
 
-        if ($request->has('images')) {
-            $case->images()->delete();
-            foreach ($request->images as $index => $url) {
-                $case->images()->create(['url' => $url, 'order' => $index]);
+        $existingImages = collect($request->input('existing_images', []))
+            ->map(function ($url) {
+                return $this->normalizeImagePath($url);
+            })
+            ->values();
+
+        if ($request->has('existing_images')) {
+            $case->images->each(function ($image) use ($existingImages) {
+                if (! $existingImages->contains($this->normalizeImagePath($image->url))) {
+                    $image->delete();
+                }
+            });
+        }
+
+        $uploadedImages = $request->file('images', []);
+        if (! is_array($uploadedImages)) {
+            $uploadedImages = [];
+        }
+        if (! empty($uploadedImages)) {
+            $urls = [];
+            $existingCount = $case->images()->count();
+            foreach ($uploadedImages as $index => $file) {
+                $path = $file->store('case-images', 'public');
+                $url = Storage::url($path);
+                $urls[] = $url;
+                $case->images()->create(['url' => $url, 'order' => $existingCount + $index]);
             }
         }
+
+        $firstImage = $case->images()->orderBy('order')->first();
+        $case->thumbnail = $firstImage?->url;
+        $case->save();
 
         return $this->successResponse(null, 'Case updated successfully');
     }
