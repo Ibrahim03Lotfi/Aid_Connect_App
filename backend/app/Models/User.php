@@ -23,6 +23,8 @@ class User extends Authenticatable
         'skills',
         'is_active',
         'api_token',
+        'address',
+        'registration_number',
     ];
 
     protected $hidden = [

@@ -43,6 +43,9 @@ Route::middleware('api.token')->group(function () {
     Route::get('/organization/cases/{id}', [OrganizationController::class, 'show']);
     Route::put('/organization/cases/{id}', [OrganizationController::class, 'update']);
     Route::delete('/organization/cases/{id}', [OrganizationController::class, 'destroy']);
+    Route::get('/organization/dashboard', [OrganizationController::class, 'dashboard']);
+    Route::get('/organization/profile', [OrganizationController::class, 'profile']);
+    Route::put('/organization/profile', [OrganizationController::class, 'updateProfile']);
     Route::get('/volunteer/cases', [VolunteerController::class, 'availableCases']);
     Route::get('/volunteer/cases/{id}', [VolunteerController::class, 'showCase']);
     Route::post('/volunteer/apply/{caseId}', [VolunteerController::class, 'apply']);

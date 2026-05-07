@@ -168,4 +168,68 @@ class OrganizationController extends ApiController
 
         return $this->successResponse(null, 'Organization request submitted successfully');
     }
+
+    public function dashboard(Request $request)
+    {
+        if ($request->user()->role !== 'organization') {
+            return $this->errorResponse('Only organizations can access this endpoint', 403);
+        }
+
+        $myCasesQuery = AidCase::where('organization_id', $request->user()->id);
+        $pendingCasesCount = (clone $myCasesQuery)->where('status', 'pending')->count();
+        $approvedCasesCount = (clone $myCasesQuery)->where('status', 'approved')->count();
+        $rejectedCasesCount = (clone $myCasesQuery)->where('status', 'rejected')->count();
+        $totalCasesCount = $myCasesQuery->count();
+
+        // Calculate total donations (sum of views as placeholder for now)
+        $totalDonations = $myCasesQuery->sum('views');
+
+        return $this->successResponse([
+            'pending_cases_count' => $pendingCasesCount,
+            'approved_cases_count' => $approvedCasesCount,
+            'rejected_cases_count' => $rejectedCasesCount,
+            'total_cases_count' => $totalCasesCount,
+            'total_donations' => $totalDonations,
+        ]);
+    }
+
+    public function profile(Request $request)
+    {
+        if ($request->user()->role !== 'organization') {
+            return $this->errorResponse('Only organizations can access this endpoint', 403);
+        }
+
+        $user = $request->user();
+
+        return $this->successResponse([
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'address' => $user->address ?? '',
+            'description' => $user->bio ?? '',
+            'registration_number' => $user->registration_number ?? '',
+            'joined_at' => $user->created_at->format('Y'),
+        ]);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        if ($request->user()->role !== 'organization') {
+            return $this->errorResponse('Only organizations can access this endpoint', 403);
+        }
+
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'phone' => 'sometimes|string|max:20',
+            'address' => 'sometimes|string',
+            'bio' => 'sometimes|string',
+            'registration_number' => 'sometimes|string|max:255',
+        ]);
+
+        $user->update($validated);
+
+        return $this->successResponse(null, 'Profile updated successfully');
+    }
 }
