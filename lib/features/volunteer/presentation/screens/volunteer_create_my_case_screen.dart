@@ -32,6 +32,23 @@ class VolunteerCreateMyCaseScreen extends StatefulWidget {
 
 class _VolunteerCreateMyCaseScreenState
     extends State<VolunteerCreateMyCaseScreen> {
+  static const Set<String> _syrianGovernorates = {
+    'دمشق',
+    'ريف دمشق',
+    'حلب',
+    'حمص',
+    'حماة',
+    'اللاذقية',
+    'طرطوس',
+    'إدلب',
+    'الرقة',
+    'دير الزور',
+    'الحسكة',
+    'درعا',
+    'السويداء',
+    'القنيطرة',
+  };
+
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -48,6 +65,7 @@ class _VolunteerCreateMyCaseScreenState
 
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _selectedImages = [];
+  final List<String> _existingImageUrls = [];
 
   @override
   void initState() {
@@ -56,6 +74,10 @@ class _VolunteerCreateMyCaseScreenState
       _titleController.text = widget.existing!.title;
       _descriptionController.text = widget.existing!.description;
       _priority = widget.existing!.priority;
+      _existingImageUrls.addAll(widget.existing!.images);
+      if (_existingImageUrls.isEmpty && widget.existing!.thumbnail != null) {
+        _existingImageUrls.add(widget.existing!.thumbnail!);
+      }
     }
     _loadMeta();
   }
@@ -69,7 +91,12 @@ class _VolunteerCreateMyCaseScreenState
     if (!mounted) return;
 
     cats.fold((_) => _categories = [], (v) => _categories = v);
-    govs.fold((_) => _governorates = [], (v) => _governorates = v);
+    govs.fold(
+      (_) => _governorates = [],
+      (v) => _governorates = v
+          .where((g) => _syrianGovernorates.contains(g.name.trim()))
+          .toList(),
+    );
 
     if (widget.existing != null) {
       _categoryId = _categories
@@ -99,6 +126,10 @@ class _VolunteerCreateMyCaseScreenState
     setState(() => _selectedImages.removeAt(index));
   }
 
+  void _removeExistingImage(int index) {
+    setState(() => _existingImageUrls.removeAt(index));
+  }
+
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_categoryId == null || _governorateId == null) {
@@ -119,6 +150,7 @@ class _VolunteerCreateMyCaseScreenState
             categoryId: _categoryId!,
             governorateId: _governorateId!,
             priority: _priority,
+            existingImageUrls: _existingImageUrls,
             imagePaths: imagePaths,
           )
         : await repo.createMyCase(
@@ -278,6 +310,68 @@ class _VolunteerCreateMyCaseScreenState
                     ),
                   ),
                   const SizedBox(height: 12),
+                  if (_existingImageUrls.isNotEmpty) ...[
+                    Text(
+                      'الصور الحالية',
+                      style: TextStyle(
+                        color: textMedium,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                      ),
+                      itemCount: _existingImageUrls.length,
+                      itemBuilder: (context, index) {
+                        final imgUrl = _existingImageUrls[index];
+                        return Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                imgUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                  color: softBlueTint,
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    color: textLight,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: GestureDetector(
+                                onTap: () => _removeExistingImage(index),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Icon(Icons.close,
+                                      size: 14, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   if (_selectedImages.isNotEmpty)
                     GridView.builder(
                       shrinkWrap: true,

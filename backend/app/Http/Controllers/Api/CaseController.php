@@ -7,6 +7,18 @@ use Illuminate\Http\Request;
 
 class CaseController extends ApiController
 {
+    private function toAbsoluteUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return $path;
+        }
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        $normalizedPath = str_starts_with($path, '/') ? $path : '/'.$path;
+        return request()->getSchemeAndHttpHost().$normalizedPath;
+    }
+
     public function index(Request $request)
     {
         $query = AidCase::with(['category', 'governorate', 'organization'])
@@ -66,19 +78,21 @@ class CaseController extends ApiController
             'governorate_id' => $case->governorate_id,
             'governorate' => $case->governorate?->name,
             'views' => $case->views,
-            'thumbnail' => $case->thumbnail,
+            'thumbnail' => $this->toAbsoluteUrl($case->thumbnail),
             'created_at' => $case->created_at->toIso8601String(),
             'is_favorited' => $userId ? $case->favorites()->where('user_id', $userId)->exists() : false,
             'organization_name' => $case->organization?->name,
         ];
 
         if ($detailed) {
-            $data['images'] = $case->images->pluck('url')->toArray();
+            $data['images'] = $case->images->map(function ($image) {
+                return $this->toAbsoluteUrl($image->url);
+            })->toArray();
             $data['attachments'] = $case->attachments->map(function ($attachment) {
                 return [
                     'id' => $attachment->id,
                     'name' => $attachment->name,
-                    'url' => $attachment->url,
+                    'url' => $this->toAbsoluteUrl($attachment->url),
                     'type' => $attachment->type,
                     'size' => $attachment->size,
                 ];

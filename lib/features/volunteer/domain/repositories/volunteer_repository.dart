@@ -74,6 +74,7 @@ abstract class VolunteerRepository {
     required int categoryId,
     required int governorateId,
     required String priority,
+    List<String> existingImageUrls = const [],
     List<String> imagePaths = const [],
   });
 

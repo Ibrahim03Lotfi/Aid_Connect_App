@@ -13,20 +13,22 @@ class DemoDataSeeder extends Seeder
     public function run(): void
     {
         $organizations = collect([
-            ['name' => 'Jamiyat Alkhair', 'email' => 'org1@example.com', 'phone' => '0910000001'],
-            ['name' => 'Muassasat Alamal', 'email' => 'org2@example.com', 'phone' => '0910000002'],
-            ['name' => 'Jamiyat Annour', 'email' => 'org3@example.com', 'phone' => '0910000003'],
-            ['name' => 'Muassasat Albaraka', 'email' => 'org4@example.com', 'phone' => '0910000004'],
-            ['name' => 'Jamiyat Alinsan', 'email' => 'org5@example.com', 'phone' => '0910000005'],
+            ['name' => 'Alkhair', 'email' => 'org1@example.com', 'phone' => '0910000001'],
+            ['name' => 'Alamal', 'email' => 'org2@example.com', 'phone' => '0910000002'],
+            ['name' => 'Alnour', 'email' => 'org3@example.com', 'phone' => '0910000003'],
+            ['name' => 'Alaun', 'email' => 'org4@example.com', 'phone' => '0910000004'],
+            ['name' => 'Basmah', 'email' => 'org5@example.com', 'phone' => '0910000005'],
         ])->map(function ($org) {
-            return User::create([
-                'name' => $org['name'],
-                'email' => $org['email'],
-                'phone' => $org['phone'],
-                'password' => Hash::make('password'),
-                'role' => 'organization',
-                'is_active' => true,
-            ]);
+            return User::updateOrCreate(
+                ['email' => $org['email']],
+                [
+                    'name' => $org['name'],
+                    'phone' => $org['phone'],
+                    'password' => Hash::make('password'),
+                    'role' => 'organization',
+                    'is_active' => true,
+                ]
+            );
         });
 
         collect([
@@ -36,14 +38,16 @@ class DemoDataSeeder extends Seeder
             ['name' => 'Maya', 'email' => 'maya@example.com', 'phone' => '0920000004'],
             ['name' => 'Nad', 'email' => 'nad@example.com', 'phone' => '0920000005'],
         ])->each(function ($vol) {
-            User::create([
-                'name' => $vol['name'],
-                'email' => $vol['email'],
-                'phone' => $vol['phone'],
-                'password' => Hash::make('pppppppp'),
-                'role' => 'volunteer',
-                'is_active' => true,
-            ]);
+            User::updateOrCreate(
+                ['email' => $vol['email']],
+                [
+                    'name' => $vol['name'],
+                    'phone' => $vol['phone'],
+                    'password' => Hash::make('pppppppp'),
+                    'role' => 'volunteer',
+                    'is_active' => true,
+                ]
+            );
         });
 
         $primaryOrganization = $organizations->first();

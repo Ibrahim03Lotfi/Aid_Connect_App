@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../config/routes/app_routes.dart';
 import '../../../../services/locator.dart';
+import '../../../organization/domain/entities/org_case.dart';
 import '../../../user/domain/entities/case.dart';
 import '../../domain/repositories/volunteer_repository.dart';
 
@@ -37,14 +38,69 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
     setState(() => _isLoading = true);
     
     final repository = locator<VolunteerRepository>();
-    final result = await repository.getVolunteerFeed(query: _searchController.text);
+    final queryText = _searchController.text.trim();
+    final result = await repository.getVolunteerFeed(query: queryText);
     
-    result.fold(
-      (failure) => setState(() => _isLoading = false),
-      (cases) => setState(() {
-        _cases = cases;
-        _isLoading = false;
-      }),
+    await result.fold(
+      (failure) async {
+        // Fallback: at minimum show current volunteer posted cases.
+        final mine = await repository.getMyCases();
+        mine.fold(
+          (_) {
+            setState(() => _isLoading = false);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('فشل تحميل الحالات: ${failure.message}'),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+          (myCases) {
+            final mapped = myCases.map(_orgCaseToCase).toList();
+            setState(() {
+              _cases = _applyLocalSearchFilter(mapped, queryText);
+              _isLoading = false;
+            });
+          },
+        );
+      },
+      (cases) async {
+        setState(() {
+          _cases = _applyLocalSearchFilter(cases, queryText);
+          _isLoading = false;
+        });
+      },
+    );
+  }
+
+  List<Case> _applyLocalSearchFilter(List<Case> items, String query) {
+    if (query.isEmpty) return items;
+    final q = query.toLowerCase();
+    return items.where((c) {
+      return c.title.toLowerCase().contains(q) ||
+          c.governorate.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  Case _orgCaseToCase(OrgCase c) {
+    return Case(
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      governorate: c.governorate,
+      category: c.category,
+      categoryId: 0,
+      governorateId: 0,
+      status: c.status,
+      priority: c.priority,
+      thumbnail: c.thumbnail,
+      images: c.images,
+      views: c.views,
+      createdAt: c.createdAt,
+      organizationName: 'أنا',
     );
   }
 
@@ -159,7 +215,7 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
                     controller: _searchController,
                     onSubmitted: (_) => _loadCases(),
                     decoration: InputDecoration(
-                      hintText: 'ابحث بالعنوان، اسم المتطوع، أو المحافظة...',
+                      hintText: 'ابحث باسم الحالة أو المحافظة...',
                       hintStyle: TextStyle(color: textLight, fontSize: 14),
                       prefixIcon: Icon(Icons.search, color: friendlyBlue),
                       filled: true,

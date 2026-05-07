@@ -237,141 +237,160 @@ class _VolunteerMyCasesScreenState extends State<VolunteerMyCasesScreen> {
 
   Widget _buildCaseCard(OrgCase c) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: cardWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderLight, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: friendlyBlue.withAlpha(8),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _buildStatusBadge(c.status),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () async {
-                    final updated = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => VolunteerCreateMyCaseScreen(existing: c),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: cardWhite,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderLight, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: friendlyBlue.withAlpha(8),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _buildStatusBadge(c.status),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () async {
+                      final updated = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => VolunteerCreateMyCaseScreen(existing: c),
+                        ),
+                      );
+                      if (updated == true) _loadCases();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: friendlyBlue.withAlpha(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                    );
-                    if (updated == true) _loadCases();
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: friendlyBlue.withAlpha(12),
-                      borderRadius: BorderRadius.circular(10),
+                      child: const Icon(Icons.edit_outlined,
+                          size: 18, color: friendlyBlue),
                     ),
-                    child: const Icon(Icons.edit_outlined,
-                        size: 18, color: friendlyBlue),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _formatDate(c.createdAt),
-                  style: TextStyle(
-                    color: textLight,
-                    fontSize: 12,
+                  const SizedBox(width: 8),
+                  Text(
+                    _formatDate(c.createdAt),
+                    style: TextStyle(
+                      color: textLight,
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              c.title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: textDark,
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.category_outlined, size: 16, color: textLight),
-                const SizedBox(width: 4),
-                Text(
-                  c.category,
-                  style: TextStyle(color: textMedium, fontSize: 13),
+              const SizedBox(height: 12),
+              Text(
+                c.title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: textDark,
                 ),
-                const SizedBox(width: 16),
-                Icon(Icons.location_on_outlined, size: 16, color: textLight),
-                const SizedBox(width: 4),
-                Text(
-                  c.governorate,
-                  style: TextStyle(color: textMedium, fontSize: 13),
-                ),
-              ],
-            ),
-            if (c.isRejected && c.rejectionReason != null)
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withAlpha(15),
+              ),
+              const SizedBox(height: 10),
+              if (c.thumbnail != null || c.images.isNotEmpty)
+                ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red.withAlpha(30), width: 1),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.red, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        c.rejectionReason!,
-                        style: TextStyle(color: Colors.red, fontSize: 13),
+                  child: Image.network(
+                    c.thumbnail ?? c.images.first,
+                    height: 140,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 140,
+                      color: softBlueTint,
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        color: textLight,
                       ),
                     ),
-                  ],
+                  ),
                 ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.category_outlined, size: 16, color: textLight),
+                  const SizedBox(width: 4),
+                  Text(
+                    c.category,
+                    style: TextStyle(color: textMedium, fontSize: 13),
+                  ),
+                  const SizedBox(width: 16),
+                  Icon(Icons.location_on_outlined, size: 16, color: textLight),
+                  const SizedBox(width: 4),
+                  Text(
+                    c.governorate,
+                    style: TextStyle(color: textMedium, fontSize: 13),
+                  ),
+                ],
               ),
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: GestureDetector(
-                onTap: () => _deleteCase(c.id),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+              if (c.isRejected && c.rejectionReason != null)
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.red.withAlpha(15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.red.withAlpha(30), width: 1),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                      Icon(Icons.info_outline, color: Colors.red, size: 18),
                       const SizedBox(width: 8),
-                      Text(
-                        'حذف الحالة',
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
+                      Expanded(
+                        child: Text(
+                          c.rejectionReason!,
+                          style: TextStyle(color: Colors.red, fontSize: 13),
                         ),
                       ),
                     ],
                   ),
                 ),
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: GestureDetector(
+                  onTap: () => _deleteCase(c.id),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withAlpha(15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.withAlpha(30), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'حذف الحالة',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildStatusBadge(String status) {

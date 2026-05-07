@@ -11,6 +11,22 @@ import '../models/governorate_model.dart';
 
 class UserRepositoryImpl implements UserRepository {
   final HttpClient _httpClient;
+  static const Set<String> _syrianGovernorates = {
+    'دمشق',
+    'ريف دمشق',
+    'حلب',
+    'حمص',
+    'حماة',
+    'اللاذقية',
+    'طرطوس',
+    'إدلب',
+    'الرقة',
+    'دير الزور',
+    'الحسكة',
+    'درعا',
+    'السويداء',
+    'القنيطرة',
+  };
 
   UserRepositoryImpl({required HttpClient httpClient})
     : _httpClient = httpClient;
@@ -122,6 +138,7 @@ class UserRepositoryImpl implements UserRepository {
       );
       final governorates = (response.data ?? [])
           .map((e) => GovernorateModel.fromJson(e as Map<String, dynamic>))
+          .where((g) => _syrianGovernorates.contains(g.name.trim()))
           .toList();
       return Right(governorates);
     } on Failure catch (failure) {

@@ -10,6 +10,27 @@ use Illuminate\Support\Facades\Storage;
 
 class VolunteerController extends ApiController
 {
+    private function toAbsoluteUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return $path;
+        }
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        $normalizedPath = str_starts_with($path, '/') ? $path : '/'.$path;
+        return request()->getSchemeAndHttpHost().$normalizedPath;
+    }
+
+    private function normalizeImagePath(string $urlOrPath): string
+    {
+        $path = parse_url($urlOrPath, PHP_URL_PATH) ?: $urlOrPath;
+        if (! str_starts_with($path, '/')) {
+            $path = '/'.$path;
+        }
+        return $path;
+    }
+
     public function dashboard(Request $request)
     {
         if ($request->user()->role !== 'volunteer') {
@@ -29,34 +50,35 @@ class VolunteerController extends ApiController
         ]);
     }
 
-    // Volunteer searchable feed of approved cases posted by volunteers (random order)
+    // Volunteer searchable feed: approved volunteer cases + current volunteer own cases
     public function volunteerCasesFeed(Request $request)
     {
         if ($request->user()->role !== 'volunteer') {
             return $this->errorResponse('Only volunteers can access this endpoint', 403);
         }
 
+        $userId = $request->user()->id;
         $query = AidCase::with(['category', 'governorate', 'organization'])
-            ->where('status', 'approved')
             ->whereHas('organization', function ($q) {
                 $q->where('role', 'volunteer');
+            })
+            ->where(function ($q) use ($userId) {
+                $q->where('status', 'approved')
+                    ->orWhere('organization_id', $userId);
             });
 
         if ($request->filled('q')) {
             $q = $request->q;
             $query->where(function ($sub) use ($q) {
                 $sub->where('title', 'like', "%{$q}%")
-                    ->orWhereHas('organization', function ($org) use ($q) {
-                        $org->where('name', 'like', "%{$q}%");
-                    })
                     ->orWhereHas('governorate', function ($gov) use ($q) {
                         $gov->where('name', 'like', "%{$q}%");
                     });
             });
         }
 
-        $cases = $query->inRandomOrder()->paginate($request->per_page ?? 10);
-        $data = $cases->map(function ($case) use ($request) {
+        $cases = $query->inRandomOrder()->paginate(10);
+        $data = $cases->getCollection()->map(function ($case) use ($request) {
             return [
                 'id' => $case->id,
                 'title' => $case->title,
@@ -73,7 +95,7 @@ class VolunteerController extends ApiController
                 'organization_name' => $case->organization?->name,
                 'is_favorited' => false,
             ];
-        });
+        })->values();
 
         return $this->paginatedResponse($data, $cases);
     }
@@ -85,7 +107,7 @@ class VolunteerController extends ApiController
             return $this->errorResponse('Only volunteers can access this endpoint', 403);
         }
 
-        $query = AidCase::where('organization_id', $request->user()->id);
+        $query = AidCase::with('images')->where('organization_id', $request->user()->id);
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
@@ -104,6 +126,10 @@ class VolunteerController extends ApiController
                 'donations_count' => 0,
                 'created_at' => $case->created_at->toIso8601String(),
                 'rejection_reason' => $case->rejection_reason,
+                'thumbnail' => $this->toAbsoluteUrl($case->thumbnail),
+                'images' => $case->images->map(function ($image) {
+                    return $this->toAbsoluteUrl($image->url);
+                })->toArray(),
             ];
         });
 
@@ -134,9 +160,13 @@ class VolunteerController extends ApiController
             'views' => 0,
         ]);
 
-        if ($request->hasFile('images')) {
+        $uploadedImages = $request->file('images', []);
+        if (! is_array($uploadedImages)) {
+            $uploadedImages = [];
+        }
+        if (! empty($uploadedImages)) {
             $urls = [];
-            foreach ($request->file('images') as $index => $file) {
+            foreach ($uploadedImages as $index => $file) {
                 $path = $file->store('case-images', 'public');
                 $url = Storage::url($path);
                 $urls[] = $url;
@@ -166,26 +196,46 @@ class VolunteerController extends ApiController
             'title' => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
             'priority' => 'sometimes|in:low,medium,high,urgent',
+            'existing_images' => 'sometimes|array',
+            'existing_images.*' => 'string',
             'images' => 'sometimes|array',
             'images.*' => 'image|max:5120',
         ]);
 
-        $case->update(collect($validated)->except(['images'])->toArray());
+        $case->update(collect($validated)->except(['images', 'existing_images'])->toArray());
 
-        if ($request->hasFile('images')) {
-            $case->images()->delete();
+        $existingImages = collect($request->input('existing_images', []))
+            ->map(function ($url) {
+                return $this->normalizeImagePath($url);
+            })
+            ->values();
+
+        if ($request->has('existing_images')) {
+            $case->images->each(function ($image) use ($existingImages) {
+                if (! $existingImages->contains($this->normalizeImagePath($image->url))) {
+                    $image->delete();
+                }
+            });
+        }
+
+        $uploadedImages = $request->file('images', []);
+        if (! is_array($uploadedImages)) {
+            $uploadedImages = [];
+        }
+        if (! empty($uploadedImages)) {
             $urls = [];
-            foreach ($request->file('images') as $index => $file) {
+            $existingCount = $case->images()->count();
+            foreach ($uploadedImages as $index => $file) {
                 $path = $file->store('case-images', 'public');
                 $url = Storage::url($path);
                 $urls[] = $url;
-                $case->images()->create(['url' => $url, 'order' => $index]);
-            }
-            if (! empty($urls)) {
-                $case->thumbnail = $urls[0];
-                $case->save();
+                $case->images()->create(['url' => $url, 'order' => $existingCount + $index]);
             }
         }
+
+        $firstImage = $case->images()->orderBy('order')->first();
+        $case->thumbnail = $firstImage?->url;
+        $case->save();
 
         return $this->successResponse(null, 'Case updated successfully');
     }

@@ -213,7 +213,11 @@ class VolunteerRepositoryImpl implements VolunteerRepository {
       final response = await _httpClient.get<List<dynamic>>(
         '/volunteer/feed',
         queryParameters: qp,
-        fromJsonT: (data) => data as List<dynamic>,
+        fromJsonT: (data) {
+          if (data is List<dynamic>) return data;
+          if (data is Map) return data.values.toList();
+          return <dynamic>[];
+        },
       );
       final items = (response.data ?? [])
           .map((e) => CaseModel.fromJson(e as Map<String, dynamic>))
@@ -252,8 +256,12 @@ class VolunteerRepositoryImpl implements VolunteerRepository {
           createdAt: json['created_at'] != null
               ? DateTime.parse(json['created_at'])
               : DateTime.now(),
+          thumbnail: json['thumbnail'],
           rejectionReason: json['rejection_reason'],
-          images: const [],
+          images: (json['images'] as List?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              const [],
         );
       }).toList();
       return Right(items);
@@ -305,6 +313,7 @@ class VolunteerRepositoryImpl implements VolunteerRepository {
     required int categoryId,
     required int governorateId,
     required String priority,
+    List<String> existingImageUrls = const [],
     List<String> imagePaths = const [],
   }) async {
     try {
@@ -319,6 +328,8 @@ class VolunteerRepositoryImpl implements VolunteerRepository {
           'category_id': categoryId.toString(),
           'governorate_id': governorateId.toString(),
           'priority': priority,
+          for (var i = 0; i < existingImageUrls.length; i++)
+            'existing_images[$i]': existingImageUrls[i],
         },
         files: await Future.wait(files),
         fromJsonT: (data) => data,
