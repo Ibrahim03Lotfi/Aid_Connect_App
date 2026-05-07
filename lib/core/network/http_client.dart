@@ -134,9 +134,7 @@ class HttpClient {
 
       switch (method) {
         case 'GET':
-          response = await _client
-              .get(uri, headers: headers)
-              .timeout(timeout);
+          response = await _client.get(uri, headers: headers).timeout(timeout);
           break;
         case 'POST':
           response = await _client
@@ -174,7 +172,9 @@ class HttpClient {
     } on Failure {
       rethrow;
     } on http.ClientException {
-      throw const NetworkFailure('لا يوجد اتصال بالإنترنت، يرجى التحقق من اتصالك');
+      throw const NetworkFailure(
+        'لا يوجد اتصال بالإنترنت، يرجى التحقق من اتصالك',
+      );
     } catch (e) {
       throw UnknownFailure(e.toString());
     }
@@ -205,9 +205,9 @@ class HttpClient {
       req.fields.addAll(fields);
       req.files.addAll(files);
 
-      final streamed = await req
-          .send()
-          .timeout(Duration(seconds: AppConstants.connectionTimeout));
+      final streamed = await req.send().timeout(
+        Duration(seconds: AppConstants.connectionTimeout),
+      );
       final response = await http.Response.fromStream(streamed);
 
       final decoded = response.body.isNotEmpty
@@ -226,7 +226,9 @@ class HttpClient {
     } on Failure {
       rethrow;
     } on http.ClientException {
-      throw const NetworkFailure('لا يوجد اتصال بالإنترنت، يرجى التحقق من اتصالك');
+      throw const NetworkFailure(
+        'لا يوجد اتصال بالإنترنت، يرجى التحقق من اتصالك',
+      );
     } catch (e) {
       throw UnknownFailure(e.toString());
     }
@@ -259,8 +261,6 @@ class HttpClient {
 
   Map<String, String>? _encodeQuery(Map<String, dynamic>? queryParameters) {
     if (queryParameters == null || queryParameters.isEmpty) return null;
-    return queryParameters.map(
-      (key, value) => MapEntry(key, value.toString()),
-    );
+    return queryParameters.map((key, value) => MapEntry(key, value.toString()));
   }
 }

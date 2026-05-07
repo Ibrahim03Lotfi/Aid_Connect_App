@@ -2,6 +2,8 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/network/http_client.dart';
 import '../../domain/entities/org_case.dart';
+import '../../domain/entities/org_dashboard.dart';
+import '../../domain/entities/org_profile.dart';
 import '../../domain/repositories/organization_repository.dart';
 
 class OrganizationRepositoryImpl implements OrganizationRepository {
@@ -145,7 +147,103 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
           : DateTime.now(),
       thumbnail: json['thumbnail'],
       rejectionReason: json['rejection_reason'],
-      images: (json['images'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      images:
+          (json['images'] as List?)?.map((e) => e.toString()).toList() ?? [],
+    );
+  }
+
+  @override
+  Future<Either<Failure, OrgDashboard>> getDashboard() async {
+    try {
+      final response = await _httpClient.get<Map<String, dynamic>>(
+        '/organization/dashboard',
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+      if (response.data == null) {
+        return Left(ServerFailure('فشل في تحميل لوحة التحكم'));
+      }
+      return Right(_fromJsonDashboard(response.data!));
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تحميل لوحة التحكم'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, OrgProfile>> getProfile() async {
+    try {
+      final response = await _httpClient.get<Map<String, dynamic>>(
+        '/organization/profile',
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+      if (response.data == null) {
+        return Left(ServerFailure('فشل في تحميل الملف الشخصي'));
+      }
+      return Right(_fromJsonProfile(response.data!));
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تحميل الملف الشخصي'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updateProfile({
+    String? name,
+    String? phone,
+    String? address,
+    String? description,
+    String? registrationNumber,
+  }) async {
+    try {
+      final payload = <String, dynamic>{};
+      if (name != null && name.isNotEmpty) payload['name'] = name;
+      if (phone != null && phone.isNotEmpty) payload['phone'] = phone;
+      if (address != null && address.isNotEmpty) payload['address'] = address;
+      if (description != null && description.isNotEmpty) {
+        payload['bio'] = description;
+      }
+      if (registrationNumber != null && registrationNumber.isNotEmpty) {
+        payload['registration_number'] = registrationNumber;
+      }
+
+      if (payload.isEmpty) {
+        return const Left(ServerFailure('لم يتم إدخال أي تغييرات'));
+      }
+
+      await _httpClient.put(
+        '/organization/profile',
+        data: payload,
+        fromJsonT: (data) => data,
+      );
+      return const Right(null);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (e) {
+      return Left(ServerFailure('فشل في تحديث الملف الشخصي: ${e.toString()}'));
+    }
+  }
+
+  OrgDashboard _fromJsonDashboard(Map<String, dynamic> json) {
+    return OrgDashboard(
+      pendingCasesCount: json['pending_cases_count'] ?? 0,
+      approvedCasesCount: json['approved_cases_count'] ?? 0,
+      rejectedCasesCount: json['rejected_cases_count'] ?? 0,
+      totalCasesCount: json['total_cases_count'] ?? 0,
+      totalDonations: json['total_donations'] ?? 0,
+    );
+  }
+
+  OrgProfile _fromJsonProfile(Map<String, dynamic> json) {
+    return OrgProfile(
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
+      address: json['address'] ?? '',
+      description: json['description'] ?? '',
+      registrationNumber: json['registration_number'] ?? '',
+      joinedAt: json['joined_at'] ?? '',
     );
   }
 }

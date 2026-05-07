@@ -1,18 +1,18 @@
 class AppConstants {
   // API
-  static const String baseUrl = 'http://192.168.1.14:8000/api';
-  
+  static const String baseUrl = 'http://127.0.0.1:8000/api';
+
   // Pagination
   static const int defaultPageSize = 10;
   static const int maxPageSize = 50;
-  
+
   // Timeouts
   static const int connectionTimeout = 30;
   static const int receiveTimeout = 30;
-  
+
   // Cache
   static const int cacheValidityDays = 7;
-  
+
   // File Upload
   static const int maxImageSizeMB = 5;
   static const int maxFileSizeMB = 10;
@@ -69,7 +69,8 @@ class ValidationMessages {
   static const String requiredField = 'هذا الحقل مطلوب';
   static const String invalidEmail = 'البريد الإلكتروني غير صالح';
   static const String invalidPhone = 'رقم الهاتف غير صالح';
-  static const String passwordTooShort = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+  static const String passwordTooShort =
+      'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
   static const String passwordsNotMatch = 'كلمات المرور غير متطابقة';
   static const String invalidUrl = 'رابط غير صالح';
 }

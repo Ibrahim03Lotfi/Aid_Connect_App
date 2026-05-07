@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../config/routes/app_routes.dart';
+import '../../../../services/locator.dart';
+import '../bloc/org_profile_bloc/org_profile_bloc.dart';
+import '../bloc/org_profile_bloc/org_profile_event.dart';
+import '../bloc/org_profile_bloc/org_profile_state.dart';
+import '../../domain/entities/org_profile.dart';
+import '../../domain/repositories/organization_repository.dart';
 
 // Light of Impact - Warm Hopeful Color System
 const Color backgroundOffWhite = Color(0xFFF9FAFB);
@@ -14,35 +21,39 @@ const Color cardWhite = Color(0xFFFFFFFF);
 const Color borderLight = Color(0xFFE5E7EB);
 const Color inputFill = Color(0xFFF7FAFC);
 
-class OrgProfileScreen extends StatefulWidget {
+class OrgProfileScreen extends StatelessWidget {
   const OrgProfileScreen({super.key});
 
   @override
-  State<OrgProfileScreen> createState() => _OrgProfileScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          OrgProfileBloc(repository: locator<OrganizationRepository>())
+            ..add(const LoadProfile()),
+      child: const _ProfileView(),
+    );
+  }
 }
 
-class _OrgProfileScreenState extends State<OrgProfileScreen> {
-  bool _isLoading = false;
+class _ProfileView extends StatefulWidget {
+  const _ProfileView();
+
+  @override
+  State<_ProfileView> createState() => _ProfileViewState();
+}
+
+class _ProfileViewState extends State<_ProfileView> {
   bool _isEditing = false;
-  
-  final Map<String, dynamic> _orgData = {
-    'name': 'منظمة الخير للإغاثة',
-    'email': 'info@khair-org.org',
-    'phone': '01234567890',
-    'address': 'شارع الفيحاء، دمشق، سوريا',
-    'registrationNumber': '123456789',
-    'description': 'منظمة خيرية متخصصة في تقديم المساعدات العاجلة والإغاثة للأسر المحتاجة',
-    'website': 'www.khair-org.org',
-    'establishedYear': '2015',
-  };
-  
+  OrgProfile? _currentProfile;
+
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _websiteController = TextEditingController();
-  
+  final _registrationNumberController = TextEditingController();
+
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -52,44 +63,51 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
   bool _obscureConfirmPassword = true;
 
   @override
-  void initState() {
-    super.initState();
-    _loadOrgData();
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _descriptionController.dispose();
+    _websiteController.dispose();
+    _registrationNumberController.dispose();
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 
-  void _loadOrgData() {
-    _nameController.text = _orgData['name'];
-    _emailController.text = _orgData['email'];
-    _phoneController.text = _orgData['phone'];
-    _addressController.text = _orgData['address'];
-    _descriptionController.text = _orgData['description'];
-    _websiteController.text = _orgData['website'];
+  void _loadOrgData(OrgProfile profile) {
+    _currentProfile = profile;
+    _nameController.text = profile.name;
+    _emailController.text = profile.email;
+    _phoneController.text = profile.phone;
+    _addressController.text = profile.address;
+    _descriptionController.text = profile.description;
+    _registrationNumberController.text = profile.registrationNumber;
   }
 
   Future<void> _saveProfile() async {
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() {
-      _isLoading = false;
-      _isEditing = false;
-    });
-    
-    if (mounted) {
-      _showSnackBar('تم حفظ البيانات بنجاح!', softTeal);
-    }
+    context.read<OrgProfileBloc>().add(
+      UpdateProfile(
+        name: _nameController.text,
+        phone: _phoneController.text,
+        address: _addressController.text,
+        description: _descriptionController.text,
+        registrationNumber: _registrationNumberController.text,
+      ),
+    );
   }
 
   Future<void> _changePassword() async {
     if (!_passwordFormKey.currentState!.validate()) return;
-    
-    setState(() => _isLoading = true);
+
     await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
-    
+
     _currentPasswordController.clear();
     _newPasswordController.clear();
     _confirmPasswordController.clear();
-    
+
     if (mounted) {
       Navigator.pop(context);
       _showSnackBar('تم تغيير كلمة المرور بنجاح!', softTeal);
@@ -102,9 +120,7 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
         content: Text(message),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(12),
       ),
     );
@@ -115,9 +131,7 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardWhite,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             Container(
@@ -142,17 +156,24 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
                   controller: _currentPasswordController,
                   label: 'كلمة المرور الحالية',
                   isObscure: _obscureCurrentPassword,
-                  onToggle: () => setState(() => _obscureCurrentPassword = !_obscureCurrentPassword),
-                  validator: (v) => v?.isEmpty ?? true ? 'يرجى إدخال كلمة المرور الحالية' : null,
+                  onToggle: () => setState(
+                    () => _obscureCurrentPassword = !_obscureCurrentPassword,
+                  ),
+                  validator: (v) => v?.isEmpty ?? true
+                      ? 'يرجى إدخال كلمة المرور الحالية'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 _buildPasswordField(
                   controller: _newPasswordController,
                   label: 'كلمة المرور الجديدة',
                   isObscure: _obscureNewPassword,
-                  onToggle: () => setState(() => _obscureNewPassword = !_obscureNewPassword),
+                  onToggle: () => setState(
+                    () => _obscureNewPassword = !_obscureNewPassword,
+                  ),
                   validator: (v) {
-                    if (v?.isEmpty ?? true) return 'يرجى إدخال كلمة المرور الجديدة';
+                    if (v?.isEmpty ?? true)
+                      return 'يرجى إدخال كلمة المرور الجديدة';
                     if (v!.length < 8) return 'يجب أن تكون 8 أحرف على الأقل';
                     return null;
                   },
@@ -162,10 +183,13 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
                   controller: _confirmPasswordController,
                   label: 'تأكيد كلمة المرور',
                   isObscure: _obscureConfirmPassword,
-                  onToggle: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                  onToggle: () => setState(
+                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                  ),
                   validator: (v) {
                     if (v?.isEmpty ?? true) return 'يرجى تأكيد كلمة المرور';
-                    if (v != _newPasswordController.text) return 'كلمات المرور غير متطابقة';
+                    if (v != _newPasswordController.text)
+                      return 'كلمات المرور غير متطابقة';
                     return null;
                   },
                 ),
@@ -184,7 +208,7 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
             child: Text('إلغاء', style: TextStyle(color: textMedium)),
           ),
           GestureDetector(
-            onTap: _isLoading ? null : _changePassword,
+            onTap: _changePassword,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
@@ -193,22 +217,13 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text(
-                      'تغيير',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+              child: const Text(
+                'تغيير',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ),
         ],
@@ -234,7 +249,9 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
         suffixIcon: GestureDetector(
           onTap: onToggle,
           child: Icon(
-            isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            isObscure
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             color: textLight,
             size: 20,
           ),
@@ -262,9 +279,7 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: cardWhite,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             Container(
@@ -316,84 +331,133 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: backgroundOffWhite,
-      appBar: AppBar(
-        backgroundColor: backgroundOffWhite,
-        elevation: 0,
-        title: Text(
-          'الملف الشخصي',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: textDark,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          if (!_isEditing)
-            Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: cardWhite,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: borderLight, width: 1),
-              ),
-              child: IconButton(
-                icon: Icon(Icons.edit_outlined, color: friendlyBlue, size: 20),
-                onPressed: () => setState(() => _isEditing = true),
-              ),
-            )
-          else
-            Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [friendlyBlue, softTeal],
+    return BlocListener<OrgProfileBloc, OrgProfileState>(
+      listener: (context, state) {
+        if (state is OrgProfileLoaded) {
+          _loadOrgData(state.profile);
+        } else if (state is OrgProfileUpdated) {
+          setState(() => _isEditing = false);
+          _showSnackBar('تم حفظ البيانات بنجاح!', softTeal);
+          context.read<OrgProfileBloc>().add(const LoadProfile());
+        } else if (state is OrgProfileError) {
+          _showSnackBar(state.message, Colors.red);
+        }
+      },
+      child: BlocBuilder<OrgProfileBloc, OrgProfileState>(
+        builder: (context, state) {
+          if (state is OrgProfileLoading && _currentProfile == null) {
+            return Scaffold(
+              backgroundColor: backgroundOffWhite,
+              appBar: AppBar(
+                backgroundColor: backgroundOffWhite,
+                elevation: 0,
+                title: Text(
+                  'الملف الشخصي',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: textDark,
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(12),
+                centerTitle: true,
               ),
-              child: _isLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      ),
-                    )
-                  : IconButton(
-                      icon: const Icon(Icons.check, color: Colors.white, size: 20),
-                      onPressed: _isLoading ? null : _saveProfile,
+              body: const Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          return Scaffold(
+            backgroundColor: backgroundOffWhite,
+            appBar: AppBar(
+              backgroundColor: backgroundOffWhite,
+              elevation: 0,
+              title: Text(
+                'الملف الشخصي',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: textDark,
+                ),
+              ),
+              centerTitle: true,
+              actions: [
+                if (!_isEditing)
+                  Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: cardWhite,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: borderLight, width: 1),
                     ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        color: friendlyBlue,
+                        size: 20,
+                      ),
+                      onPressed: () => setState(() => _isEditing = true),
+                    ),
+                  )
+                else
+                  Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [friendlyBlue, softTeal],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: state is OrgProfileLoading
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            ),
+                          )
+                        : IconButton(
+                            icon: const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            onPressed: state is OrgProfileLoading
+                                ? null
+                                : _saveProfile,
+                          ),
+                  ),
+              ],
             ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildProfileHeader(),
-              const SizedBox(height: 28),
-              _buildSectionTitle('معلومات المنظمة'),
-              const SizedBox(height: 16),
-              _buildOrgInfoSection(),
-              const SizedBox(height: 28),
-              _buildSectionTitle('معلومات التواصل'),
-              const SizedBox(height: 16),
-              _buildContactSection(),
-              const SizedBox(height: 28),
-              _buildSectionTitle('الإعدادات'),
-              const SizedBox(height: 16),
-              _buildActionsSection(),
-            ],
-          ),
-        ),
+            body: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildProfileHeader(),
+                    const SizedBox(height: 28),
+                    _buildSectionTitle('معلومات المنظمة'),
+                    const SizedBox(height: 16),
+                    _buildOrgInfoSection(),
+                    const SizedBox(height: 28),
+                    _buildSectionTitle('معلومات التواصل'),
+                    const SizedBox(height: 16),
+                    _buildContactSection(),
+                    const SizedBox(height: 28),
+                    _buildSectionTitle('الإعدادات'),
+                    const SizedBox(height: 16),
+                    _buildActionsSection(),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -457,7 +521,7 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            _orgData['name'],
+            _nameController.text,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -466,11 +530,10 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'عضو منذ ${_orgData['establishedYear']}',
-            style: TextStyle(
-              fontSize: 14,
-              color: textMedium,
-            ),
+            _currentProfile != null
+                ? 'عضو منذ ${_currentProfile!.joinedAt}'
+                : '',
+            style: TextStyle(fontSize: 14, color: textMedium),
           ),
           const SizedBox(height: 12),
           Container(
@@ -539,7 +602,7 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
             const SizedBox(height: 16),
             _buildInfoField(
               label: 'الرقم الضريبي',
-              value: _orgData['registrationNumber'],
+              controller: _registrationNumberController,
               icon: Icons.numbers_outlined,
               enabled: false,
             ),
@@ -669,10 +732,7 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
                 Expanded(
                   child: Text(
                     controller?.text ?? value ?? '',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: textDark,
-                    ),
+                    style: TextStyle(fontSize: 14, color: textDark),
                   ),
                 ),
               ],
@@ -728,10 +788,7 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
             ),
             child: Text(
               _descriptionController.text,
-              style: TextStyle(
-                fontSize: 14,
-                color: textDark,
-              ),
+              style: TextStyle(fontSize: 14, color: textDark),
             ),
           ),
       ],
@@ -818,29 +875,9 @@ class _OrgProfileScreenState extends State<OrgProfileScreen> {
         ),
       ),
       subtitle: subtitle.isNotEmpty
-          ? Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: textMedium,
-              ),
-            )
+          ? Text(subtitle, style: TextStyle(fontSize: 12, color: textMedium))
           : null,
       trailing: Icon(Icons.arrow_forward_ios, size: 16, color: textLight),
     );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
-    _descriptionController.dispose();
-    _websiteController.dispose();
-    _currentPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
   }
 }

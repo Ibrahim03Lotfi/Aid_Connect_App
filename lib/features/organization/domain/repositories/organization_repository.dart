@@ -1,6 +1,8 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/org_case.dart';
+import '../entities/org_dashboard.dart';
+import '../entities/org_profile.dart';
 
 abstract class OrganizationRepository {
   Future<Either<Failure, List<OrgCase>>> getOrganizationCases({
@@ -29,4 +31,16 @@ abstract class OrganizationRepository {
   });
 
   Future<Either<Failure, void>> deleteCase(int caseId);
+
+  Future<Either<Failure, OrgDashboard>> getDashboard();
+
+  Future<Either<Failure, OrgProfile>> getProfile();
+
+  Future<Either<Failure, void>> updateProfile({
+    String? name,
+    String? phone,
+    String? address,
+    String? description,
+    String? registrationNumber,
+  });
 }

@@ -60,7 +60,9 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const RegisterScreen());
 
       case organizationRequest:
-        return MaterialPageRoute(builder: (_) => const OrganizationRequestScreen());
+        return MaterialPageRoute(
+          builder: (_) => const OrganizationRequestScreen(),
+        );
 
       case home:
         return MaterialPageRoute(builder: (_) => const UserMainScreen());
@@ -68,17 +70,13 @@ class AppRoutes {
       case governorates:
         final args = settings.arguments as Map<String, dynamic>?;
         return MaterialPageRoute(
-          builder: (_) => GovernoratesScreen(
-            categoryId: args?['categoryId'],
-          ),
+          builder: (_) => GovernoratesScreen(categoryId: args?['categoryId']),
         );
 
       case caseDetails:
         final args = settings.arguments as Map<String, dynamic>?;
         return MaterialPageRoute(
-          builder: (_) => CaseDetailsScreen(
-            caseId: args?['caseId'] ?? 0,
-          ),
+          builder: (_) => CaseDetailsScreen(caseId: args?['caseId'] ?? 0),
         );
 
       case profile:
@@ -109,17 +107,19 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const VolunteerMainScreen());
 
       case volunteerDashboard:
-        return MaterialPageRoute(builder: (_) => const VolunteerDashboardScreen());
+        return MaterialPageRoute(
+          builder: (_) => const VolunteerDashboardScreen(),
+        );
 
       case volunteerCreateMyCase:
-        return MaterialPageRoute(builder: (_) => const VolunteerCreateMyCaseScreen());
+        return MaterialPageRoute(
+          builder: (_) => const VolunteerCreateMyCaseScreen(),
+        );
 
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
-            body: Center(
-              child: Text('Route not found: ${settings.name}'),
-            ),
+            body: Center(child: Text('Route not found: ${settings.name}')),
           ),
         );
     }

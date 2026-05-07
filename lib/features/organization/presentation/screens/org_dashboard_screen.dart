@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../config/routes/app_routes.dart';
+import '../../../../services/locator.dart';
+import '../bloc/org_dashboard_bloc/org_dashboard_bloc.dart';
+import '../bloc/org_dashboard_bloc/org_dashboard_event.dart';
+import '../bloc/org_dashboard_bloc/org_dashboard_state.dart';
+import '../../domain/entities/org_dashboard.dart';
+import '../../domain/repositories/organization_repository.dart';
 
 // Light of Impact - Warm Hopeful Color System
 const Color backgroundOffWhite = Color(0xFFF9FAFB);
@@ -14,6 +21,20 @@ const Color borderLight = Color(0xFFE5E7EB);
 
 class OrgDashboardScreen extends StatelessWidget {
   const OrgDashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          OrgDashboardBloc(repository: locator<OrganizationRepository>())
+            ..add(const LoadDashboard()),
+      child: const _DashboardView(),
+    );
+  }
+}
+
+class _DashboardView extends StatelessWidget {
+  const _DashboardView();
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +61,11 @@ class OrgDashboardScreen extends StatelessWidget {
               border: Border.all(color: borderLight, width: 1),
             ),
             child: IconButton(
-              icon: Icon(Icons.notifications_outlined, color: friendlyBlue, size: 20),
+              icon: Icon(
+                Icons.notifications_outlined,
+                color: friendlyBlue,
+                size: 20,
+              ),
               onPressed: () {
                 Navigator.pushNamed(context, AppRoutes.notifications);
               },
@@ -48,40 +73,72 @@ class OrgDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildWelcomeSection(),
-              const SizedBox(height: 24),
-              _buildStatsRow(),
-              const SizedBox(height: 28),
-              Text(
-                'الإجراءات السريعة',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: textDark,
+      body: BlocBuilder<OrgDashboardBloc, OrgDashboardState>(
+        builder: (context, state) {
+          if (state is OrgDashboardLoading) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is OrgDashboardLoaded) {
+            return SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildWelcomeSection(),
+                    const SizedBox(height: 24),
+                    _buildStatsRow(state.dashboard),
+                    const SizedBox(height: 28),
+                    Text(
+                      'الإجراءات السريعة',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildQuickActions(context),
+                    const SizedBox(height: 28),
+                    Text(
+                      'آخر النشاطات',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildRecentActivity(),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              _buildQuickActions(context),
-              const SizedBox(height: 28),
-              Text(
-                'آخر النشاطات',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: textDark,
-                ),
+            );
+          } else if (state is OrgDashboardError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    state.message,
+                    style: TextStyle(fontSize: 16, color: textDark),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      context.read<OrgDashboardBloc>().add(
+                        const LoadDashboard(),
+                      );
+                    },
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              _buildRecentActivity(),
-            ],
-          ),
-        ),
+            );
+          }
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
@@ -91,10 +148,7 @@ class OrgDashboardScreen extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            friendlyBlue,
-            softTeal,
-          ],
+          colors: [friendlyBlue, softTeal],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -123,11 +177,7 @@ class OrgDashboardScreen extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.business,
-              color: friendlyBlue,
-              size: 32,
-            ),
+            child: const Icon(Icons.business, color: friendlyBlue, size: 32),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -159,26 +209,26 @@ class OrgDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsRow() {
+  Widget _buildStatsRow(OrgDashboard dashboard) {
     return Row(
       children: [
         _buildStatCard(
           'الحالات المعلقة',
-          '3',
+          dashboard.pendingCasesCount.toString(),
           Colors.orange,
           Icons.hourglass_empty_rounded,
         ),
         const SizedBox(width: 12),
         _buildStatCard(
           'الحالات المقبولة',
-          '4',
+          dashboard.approvedCasesCount.toString(),
           softTeal,
           Icons.check_circle_rounded,
         ),
         const SizedBox(width: 12),
         _buildStatCard(
           'إجمالي التبرعات',
-          '156',
+          dashboard.totalDonations.toString(),
           friendlyBlue,
           Icons.favorite_rounded,
         ),
@@ -325,10 +375,7 @@ class OrgDashboardScreen extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: textMedium,
-                    ),
+                    style: TextStyle(fontSize: 13, color: textMedium),
                   ),
                 ],
               ),
@@ -378,11 +425,8 @@ class OrgDashboardScreen extends StatelessWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: activities.length,
-        separatorBuilder: (context, index) => Divider(
-          color: borderLight,
-          height: 1,
-          indent: 56,
-        ),
+        separatorBuilder: (context, index) =>
+            Divider(color: borderLight, height: 1, indent: 56),
         itemBuilder: (context, index) {
           final activity = activities[index];
           return ListTile(
@@ -408,10 +452,7 @@ class OrgDashboardScreen extends StatelessWidget {
             ),
             subtitle: Text(
               activity['time'] as String,
-              style: TextStyle(
-                fontSize: 12,
-                color: textMedium,
-              ),
+              style: TextStyle(fontSize: 12, color: textMedium),
             ),
           );
         },
