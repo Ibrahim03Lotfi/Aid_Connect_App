@@ -158,6 +158,12 @@ class HttpClient {
       final decoded = response.body.isNotEmpty
           ? jsonDecode(response.body)
           : <String, dynamic>{};
+      
+      if (kDebugMode) {
+        _logger.i('Response status: ${response.statusCode}');
+        _logger.i('Response body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}');
+      }
+      
       final body = decoded is Map<String, dynamic>
           ? decoded
           : <String, dynamic>{'data': decoded};

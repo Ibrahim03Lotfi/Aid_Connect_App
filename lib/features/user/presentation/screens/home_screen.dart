@@ -137,10 +137,27 @@ class HomeView extends StatelessWidget {
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: homeState.categories.length,
+                        itemCount: homeState.categories.length + 1, // +1 for "All Categories"
                         itemBuilder: (context, index) {
-                          final category = homeState.categories[index];
-                          return _CategoryCard(category: category);
+                          if (index == 0) {
+                            // "All Categories" card
+                            return _CategoryCard(
+                              category: Category(
+                                id: 0, // Use 0 for "All Categories"
+                                name: 'الكل الفئات',
+                                icon: 'apps',
+                                casesCount: homeState.cases.length,
+                              ),
+                              selectedCategoryId: homeState.selectedCategoryId,
+                            );
+                          } else {
+                            // Regular category cards
+                            final category = homeState.categories[index - 1];
+                            return _CategoryCard(
+                              category: category,
+                              selectedCategoryId: homeState.selectedCategoryId,
+                            );
+                          }
                         },
                       ),
                     ),
@@ -150,7 +167,12 @@ class HomeView extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
                       child: Text(
-                        'آخر الحالات',
+                        homeState.selectedCategoryId != null
+                            ? homeState.categories
+                                .where((c) => c.id == homeState.selectedCategoryId)
+                                .firstOrNull
+                                ?.name ?? 'آخر الحالات'
+                            : 'آخر الحالات',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -347,18 +369,20 @@ class HomeView extends StatelessWidget {
 
 class _CategoryCard extends StatelessWidget {
   final Category category;
+  final int? selectedCategoryId;
 
-  const _CategoryCard({required this.category});
+  const _CategoryCard({
+    required this.category,
+    this.selectedCategoryId,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isSelected = selectedCategoryId == category.id;
+    
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(
-          context,
-          AppRoutes.governorates,
-          arguments: {'categoryId': category.id},
-        );
+        context.read<HomeBloc>().add(CategorySelectedEvent(category.id));
       },
       child: Container(
         width: 90,
@@ -366,11 +390,16 @@ class _CategoryCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: cardWhite,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderLight, width: 1),
+          border: Border.all(
+            color: isSelected ? friendlyBlue : borderLight, 
+            width: isSelected ? 2 : 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: friendlyBlue.withAlpha(12),
-              blurRadius: 12,
+              color: isSelected 
+                  ? friendlyBlue.withAlpha(25)
+                  : friendlyBlue.withAlpha(12),
+              blurRadius: isSelected ? 16 : 12,
               offset: const Offset(0, 4),
             ),
           ],

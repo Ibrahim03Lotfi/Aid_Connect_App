@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/network/http_client.dart';
@@ -64,6 +65,66 @@ class UserRepositoryImpl implements UserRepository {
     } on Failure catch (failure) {
       return Left(failure);
     } catch (e) {
+      return Left(ServerFailure('فشل في تحميل الحالات'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Case>>> getAllCases({int page = 1}) async {
+    try {
+      log('Fetching all cases - page: $page');
+      final response = await _httpClient.get<List<dynamic>>(
+        '/cases',
+        queryParameters: {'page': page, 'per_page': 10},
+        fromJsonT: (data) => data as List<dynamic>,
+      );
+      log('Response data: ${response.data}');
+      
+      final data = response.data ?? [];
+      log('Cases count: ${data.length}');
+      
+      final cases = data.map((e) {
+        try {
+          return CaseModel.fromJson(e as Map<String, dynamic>);
+        } catch (e2) {
+          log('Error parsing case: $e2, data: $e');
+          throw e2;
+        }
+      }).toList();
+      
+      return Right(cases);
+    } on Failure catch (failure) {
+      log('Failure: $failure');
+      return Left(failure);
+    } catch (e, stackTrace) {
+      log('Error in getAllCases: $e\n$stackTrace');
+      return Left(ServerFailure('فشل في تحميل الحالات'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Case>>> getCasesByCategory(
+    int categoryId, {
+    int page = 1,
+  }) async {
+    try {
+      log('Fetching cases by category: $categoryId, page: $page');
+      final response = await _httpClient.get<List<dynamic>>(
+        '/cases',
+        queryParameters: {'category_id': categoryId, 'page': page, 'per_page': 10},
+        fromJsonT: (data) => data as List<dynamic>,
+      );
+      final data = response.data ?? [];
+      log('Cases count: ${data.length}');
+      final cases = data
+          .map((e) => CaseModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return Right(cases);
+    } on Failure catch (failure) {
+      log('Failure: $failure');
+      return Left(failure);
+    } catch (e, stackTrace) {
+      log('Error in getCasesByCategory: $e\n$stackTrace');
       return Left(ServerFailure('فشل في تحميل الحالات'));
     }
   }

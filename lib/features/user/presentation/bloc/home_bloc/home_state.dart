@@ -22,12 +22,14 @@ class HomeLoaded extends HomeState {
   final List<Case> cases;
   final bool hasMoreCases;
   final int currentPage;
+  final int? selectedCategoryId;
 
   const HomeLoaded({
     required this.categories,
     required this.cases,
     this.hasMoreCases = true,
     this.currentPage = 1,
+    this.selectedCategoryId,
   });
 
   HomeLoaded copyWith({
@@ -35,17 +37,19 @@ class HomeLoaded extends HomeState {
     List<Case>? cases,
     bool? hasMoreCases,
     int? currentPage,
+    int? selectedCategoryId,
   }) {
     return HomeLoaded(
       categories: categories ?? this.categories,
       cases: cases ?? this.cases,
       hasMoreCases: hasMoreCases ?? this.hasMoreCases,
       currentPage: currentPage ?? this.currentPage,
+      selectedCategoryId: selectedCategoryId ?? this.selectedCategoryId,
     );
   }
 
   @override
-  List<Object?> get props => [categories, cases, hasMoreCases, currentPage];
+  List<Object?> get props => [categories, cases, hasMoreCases, currentPage, selectedCategoryId];
 }
 
 class HomeError extends HomeState {
@@ -60,12 +64,14 @@ class HomeError extends HomeState {
 class CasesLoadingMore extends HomeState {
   final List<Category> categories;
   final List<Case> currentCases;
+  final int? selectedCategoryId;
 
   const CasesLoadingMore({
     required this.categories,
     required this.currentCases,
+    this.selectedCategoryId,
   });
 
   @override
-  List<Object?> get props => [categories, currentCases];
+  List<Object?> get props => [categories, currentCases, selectedCategoryId];
 }

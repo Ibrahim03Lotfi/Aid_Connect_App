@@ -1,5 +1,3 @@
-import 'dart:developer';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../shared/constants/app_constants.dart';
 import '../../../domain/repositories/user_repository.dart';
@@ -23,24 +21,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     Emitter<HomeState> emit,
   ) async {
     emit(const HomeLoading());
-    debugPrint('HomeBloc: Fetching home data...');
 
     final categoriesResult = await _userRepository.getCategories();
+    final casesResult = await _userRepository.getAllCases(page: 1);
+
     categoriesResult.fold(
-      (failure) {
-        debugPrint('HomeBloc: Categories error - $failure');
-        emit(HomeError(_mapFailureToMessage(failure)));
-      },
-      (categories) async {
-        debugPrint('HomeBloc: Got ${categories.length} categories');
-        final casesResult = await _userRepository.getAllCases(page: 1);
+      (failure) => emit(HomeError(_mapFailureToMessage(failure))),
+      (categories) {
         casesResult.fold(
-          (failure) {
-            debugPrint('HomeBloc: Cases error - $failure');
-            emit(HomeError(_mapFailureToMessage(failure)));
-          },
+          (failure) => emit(HomeError(_mapFailureToMessage(failure))),
           (cases) {
-            debugPrint('HomeBloc: Got ${cases.length} cases');
             emit(HomeLoaded(
               categories: categories,
               cases: cases,
@@ -73,7 +63,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final result = currentState.selectedCategoryId == null
           ? await _userRepository.getAllCases(page: nextPage)
           : await _userRepository.getCasesByCategory(
-              currentState.selectedCategoryId!,
+              categoryId: currentState.selectedCategoryId!,
               page: nextPage,
             );
       
@@ -130,7 +120,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final casesResult = event.categoryId == 0
         ? await _userRepository.getAllCases(page: 1)
         : await _userRepository.getCasesByCategory(
-            event.categoryId,
+            categoryId: event.categoryId,
             page: 1,
           );
 

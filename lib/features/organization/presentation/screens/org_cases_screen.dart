@@ -309,6 +309,25 @@ class _OrgCasesViewState extends State<OrgCasesView> {
                 ],
               ),
               const SizedBox(height: 12),
+              if (orgCase.thumbnail != null || orgCase.images.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    orgCase.thumbnail ?? orgCase.images.first,
+                    height: 140,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 140,
+                      color: softBlueTint,
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        color: textLight,
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 8),
               Text(
                 orgCase.title,
                 style: TextStyle(

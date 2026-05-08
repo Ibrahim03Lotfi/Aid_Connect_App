@@ -25,12 +25,13 @@ class _OrgMainScreenState extends State<OrgMainScreen> {
   int _currentIndex = 0;
   String? _organizationName;
 
-  final List<Widget> _screens = [
-    OrgDashboardScreen(organizationName: _organizationName),
-    OrgCasesScreen(),
-    CreateCaseScreen(),
-    OrgProfileScreen(),
-  ];
+  List<Widget> _getScreens() {
+    return [
+      OrgDashboardScreen(organizationName: _organizationName),
+      const CreateCaseScreen(),
+      const OrgProfileScreen(),
+    ];
+  }
 
   final List<Map<String, dynamic>> _navItems = const [
     {
@@ -54,7 +55,7 @@ class _OrgMainScreenState extends State<OrgMainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundOffWhite,
-      body: _screens[_currentIndex],
+      body: _getScreens()[_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: cardWhite,

@@ -34,8 +34,8 @@ class CaseModel extends Case {
       thumbnail: json['thumbnail'],
       images: (json['images'] as List?)?.map((e) => e.toString()).toList() ?? [],
       views: json['views'] ?? 0,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
+      createdAt: json['created_at'] != null && json['created_at'].toString().isNotEmpty
+          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
       isFavorited: json['is_favorited'] ?? false,
       organizationName: json['organization_name'] ?? json['organization']?['name'],

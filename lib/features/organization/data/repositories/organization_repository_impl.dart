@@ -66,7 +66,7 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
     try {
       List<http.MultipartFile> files = [];
       
-      // Only create file objects if there are actual image paths
+      // Create file objects if there are actual image paths
       if (images.isNotEmpty) {
         final fileFutures = images
             .where((path) => path.isNotEmpty)

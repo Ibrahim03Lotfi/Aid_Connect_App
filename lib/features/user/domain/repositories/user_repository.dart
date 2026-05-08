@@ -10,6 +10,11 @@ abstract class UserRepository {
 
   // Cases
   Future<Either<Failure, List<Case>>> getLatestCases({int page = 1});
+  Future<Either<Failure, List<Case>>> getAllCases({int page = 1});
+  Future<Either<Failure, List<Case>>> getCasesByCategory(
+    int categoryId, {
+    int page = 1,
+  });
   Future<Either<Failure, List<Case>>> getCasesByGovernorate(
     int governorateId, {
     int? categoryId,
