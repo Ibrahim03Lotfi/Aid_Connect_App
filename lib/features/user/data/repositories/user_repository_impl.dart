@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:dartz/dartz.dart';
+import 'package:flutter/material.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/network/http_client.dart';
 import '../../domain/entities/case.dart';
@@ -76,25 +77,40 @@ class UserRepositoryImpl implements UserRepository {
       final response = await _httpClient.get<List<dynamic>>(
         '/cases',
         queryParameters: {'page': page, 'per_page': 10},
-        fromJsonT: (data) => data as List<dynamic>,
+        fromJsonT: (data) {
+          log('fromJsonT received data type: ${data.runtimeType}');
+          return data as List<dynamic>;
+        },
       );
-      log('Response data: ${response.data}');
+      log('Response success: ${response.success}');
+      log('Response message: ${response.message}');
+      log('Response data type: ${response.data?.runtimeType}');
       
       final data = response.data ?? [];
       log('Cases count: ${data.length}');
       
-      final cases = data.map((e) {
-        try {
-          return CaseModel.fromJson(e as Map<String, dynamic>);
-        } catch (e2) {
-          log('Error parsing case: $e2, data: $e');
-          throw e2;
-        }
-      }).toList();
+      if (data.isEmpty) {
+        log('No cases found, returning empty list');
+        return Right([]);
+      }
       
+      final cases = <Case>[];
+      for (var i = 0; i < data.length; i++) {
+        final item = data[i];
+        log('Parsing case $i, type: ${item.runtimeType}');
+        try {
+          cases.add(CaseModel.fromJson(item as Map<String, dynamic>));
+        } catch (e2, st) {
+          log('Error parsing case $i: $e2\n$st');
+          log('Case data: $item');
+          // Continue with other cases instead of failing completely
+        }
+      }
+      
+      log('Successfully parsed ${cases.length} cases');
       return Right(cases);
     } on Failure catch (failure) {
-      log('Failure: $failure');
+      log('Failure caught: $failure');
       return Left(failure);
     } catch (e, stackTrace) {
       log('Error in getAllCases: $e\n$stackTrace');
@@ -108,22 +124,47 @@ class UserRepositoryImpl implements UserRepository {
     int page = 1,
   }) async {
     try {
+      debugPrint('UserRepository: getCasesByCategory called with categoryId: $categoryId, page: $page');
       log('Fetching cases by category: $categoryId, page: $page');
       final response = await _httpClient.get<List<dynamic>>(
         '/cases',
         queryParameters: {'category_id': categoryId, 'page': page, 'per_page': 10},
-        fromJsonT: (data) => data as List<dynamic>,
+        fromJsonT: (data) {
+          log('Response data type: ${data.runtimeType}');
+          return data as List<dynamic>;
+        },
       );
+      log('Response success: ${response.success}');
+      log('Response message: ${response.message}');
       final data = response.data ?? [];
+      debugPrint('UserRepository: Cases count: ${data.length}');
       log('Cases count: ${data.length}');
-      final cases = data
-          .map((e) => CaseModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+      
+      final cases = <Case>[];
+      for (var i = 0; i < data.length; i++) {
+        final item = data[i];
+        debugPrint('UserRepository: Parsing case $i, type: ${item.runtimeType}');
+        log('Parsing case $i, type: ${item.runtimeType}');
+        try {
+          cases.add(CaseModel.fromJson(item as Map<String, dynamic>));
+          debugPrint('UserRepository: Successfully parsed case $i');
+        } catch (e2, st) {
+          debugPrint('UserRepository: Error parsing case $i: $e2');
+          log('Error parsing case $i: $e2\n$st');
+          log('Case data: $item');
+          // Continue with other cases instead of failing completely
+        }
+      }
+      
+      debugPrint('UserRepository: Successfully parsed ${cases.length} cases');
+      log('Successfully parsed ${cases.length} cases');
       return Right(cases);
     } on Failure catch (failure) {
-      log('Failure: $failure');
+      debugPrint('UserRepository: Failure caught: $failure');
+      log('Failure caught: $failure');
       return Left(failure);
     } catch (e, stackTrace) {
+      debugPrint('UserRepository: Error in getCasesByCategory: $e\n$stackTrace');
       log('Error in getCasesByCategory: $e\n$stackTrace');
       return Left(ServerFailure('فشل في تحميل الحالات'));
     }

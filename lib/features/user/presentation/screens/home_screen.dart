@@ -137,27 +137,13 @@ class HomeView extends StatelessWidget {
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: homeState.categories.length + 1, // +1 for "All Categories"
+                        itemCount: homeState.categories.length,
                         itemBuilder: (context, index) {
-                          if (index == 0) {
-                            // "All Categories" card
-                            return _CategoryCard(
-                              category: Category(
-                                id: 0, // Use 0 for "All Categories"
-                                name: 'الكل الفئات',
-                                icon: 'apps',
-                                casesCount: homeState.cases.length,
-                              ),
-                              selectedCategoryId: homeState.selectedCategoryId,
-                            );
-                          } else {
-                            // Regular category cards
-                            final category = homeState.categories[index - 1];
-                            return _CategoryCard(
-                              category: category,
-                              selectedCategoryId: homeState.selectedCategoryId,
-                            );
-                          }
+                          final category = homeState.categories[index];
+                          return _CategoryCard(
+                            category: category,
+                            selectedCategoryId: homeState.selectedCategoryId,
+                          );
                         },
                       ),
                     ),

@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../../core/errors/failures.dart';
 import '../../../../../shared/constants/app_constants.dart';
 import '../../../domain/repositories/user_repository.dart';
 import 'home_event.dart';
@@ -25,33 +26,35 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     emit(const HomeLoading());
     debugPrint('HomeBloc: Fetching home data...');
 
+    // Fetch categories
     final categoriesResult = await _userRepository.getCategories();
-    categoriesResult.fold(
-      (failure) {
-        debugPrint('HomeBloc: Categories error - $failure');
-        emit(HomeError(_mapFailureToMessage(failure)));
-      },
-      (categories) async {
-        debugPrint('HomeBloc: Got ${categories.length} categories');
-        final casesResult = await _userRepository.getAllCases(page: 1);
-        casesResult.fold(
-          (failure) {
-            debugPrint('HomeBloc: Cases error - $failure');
-            emit(HomeError(_mapFailureToMessage(failure)));
-          },
-          (cases) {
-            debugPrint('HomeBloc: Got ${cases.length} cases');
-            emit(HomeLoaded(
-              categories: categories,
-              cases: cases,
-              hasMoreCases: cases.length >= AppConstants.defaultPageSize,
-              currentPage: 1,
-              selectedCategoryId: null,
-            ));
-          },
-        );
-      },
-    );
+    if (categoriesResult.isLeft()) {
+      final failure = categoriesResult.swap().getOrElse(() => ServerFailure('Unknown error'));
+      debugPrint('HomeBloc: Categories error - $failure');
+      emit(HomeError(_mapFailureToMessage(failure)));
+      return;
+    }
+    final categories = categoriesResult.getOrElse(() => []);
+    debugPrint('HomeBloc: Got ${categories.length} categories');
+
+    // Fetch cases
+    final casesResult = await _userRepository.getAllCases(page: 1);
+    if (casesResult.isLeft()) {
+      final failure = casesResult.swap().getOrElse(() => ServerFailure('Unknown error'));
+      debugPrint('HomeBloc: Cases error - $failure');
+      emit(HomeError(_mapFailureToMessage(failure)));
+      return;
+    }
+    final cases = casesResult.getOrElse(() => []);
+    debugPrint('HomeBloc: Got ${cases.length} cases');
+
+    emit(HomeLoaded(
+      categories: categories,
+      cases: cases,
+      hasMoreCases: cases.length >= AppConstants.defaultPageSize,
+      currentPage: 1,
+      selectedCategoryId: null,
+    ));
   }
 
   Future<void> _onFetchMoreCases(
@@ -77,18 +80,20 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
               page: nextPage,
             );
       
-      result.fold(
-        (failure) => emit(HomeError(_mapFailureToMessage(failure))),
-        (allCases) {
-          emit(HomeLoaded(
-            categories: currentState.categories,
-            cases: allCases,
-            hasMoreCases: allCases.length >= AppConstants.defaultPageSize,
-            currentPage: nextPage,
-            selectedCategoryId: currentState.selectedCategoryId,
-          ));
-        },
-      );
+      if (result.isLeft()) {
+        final failure = result.swap().getOrElse(() => ServerFailure('Unknown error'));
+        emit(HomeError(_mapFailureToMessage(failure)));
+        return;
+      }
+      
+      final allCases = result.getOrElse(() => []);
+      emit(HomeLoaded(
+        categories: currentState.categories,
+        cases: [...currentState.cases, ...allCases],
+        hasMoreCases: allCases.length >= AppConstants.defaultPageSize,
+        currentPage: nextPage,
+        selectedCategoryId: currentState.selectedCategoryId,
+      ));
     }
   }
 
@@ -97,25 +102,28 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     Emitter<HomeState> emit,
   ) async {
     final categoriesResult = await _userRepository.getCategories();
-    final casesResult = await _userRepository.getAllCases(page: 1);
+    if (categoriesResult.isLeft()) {
+      final failure = categoriesResult.swap().getOrElse(() => ServerFailure('Unknown error'));
+      emit(HomeError(_mapFailureToMessage(failure)));
+      return;
+    }
+    final categories = categoriesResult.getOrElse(() => []);
 
-    categoriesResult.fold(
-      (failure) => emit(HomeError(_mapFailureToMessage(failure))),
-      (categories) {
-        casesResult.fold(
-          (failure) => emit(HomeError(_mapFailureToMessage(failure))),
-          (cases) {
-            emit(HomeLoaded(
-              categories: categories,
-              cases: cases,
-              hasMoreCases: cases.length >= AppConstants.defaultPageSize,
-              currentPage: 1,
-              selectedCategoryId: null,
-            ));
-          },
-        );
-      },
-    );
+    final casesResult = await _userRepository.getAllCases(page: 1);
+    if (casesResult.isLeft()) {
+      final failure = casesResult.swap().getOrElse(() => ServerFailure('Unknown error'));
+      emit(HomeError(_mapFailureToMessage(failure)));
+      return;
+    }
+    final cases = casesResult.getOrElse(() => []);
+
+    emit(HomeLoaded(
+      categories: categories,
+      cases: cases,
+      hasMoreCases: cases.length >= AppConstants.defaultPageSize,
+      currentPage: 1,
+      selectedCategoryId: null,
+    ));
   }
 
   Future<void> _onCategorySelected(
@@ -126,6 +134,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     
     final currentState = state as HomeLoaded;
     emit(const HomeLoading());
+    debugPrint('HomeBloc: Category selected - ${event.categoryId}');
+    
+    debugPrint('HomeBloc: About to call ${event.categoryId == 0 ? "getAllCases" : "getCasesByCategory"} with categoryId: ${event.categoryId}');
     
     final casesResult = event.categoryId == 0
         ? await _userRepository.getAllCases(page: 1)
@@ -134,18 +145,24 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             page: 1,
           );
 
-    casesResult.fold(
-      (failure) => emit(HomeError(_mapFailureToMessage(failure))),
-      (cases) {
-        emit(HomeLoaded(
-          categories: currentState.categories,
-          cases: cases,
-          hasMoreCases: cases.length >= AppConstants.defaultPageSize,
-          currentPage: 1,
-          selectedCategoryId: event.categoryId == 0 ? null : event.categoryId,
-        ));
-      },
-    );
+    debugPrint('HomeBloc: Repository call completed. isLeft: ${casesResult.isLeft()}');
+    
+    if (casesResult.isLeft()) {
+      final failure = casesResult.swap().getOrElse(() => ServerFailure('Unknown error'));
+      debugPrint('HomeBloc: Category selection error - $failure');
+      emit(HomeError(_mapFailureToMessage(failure)));
+      return;
+    }
+    
+    final cases = casesResult.getOrElse(() => []);
+    debugPrint('HomeBloc: Got ${cases.length} cases for category ${event.categoryId}');
+    emit(HomeLoaded(
+      categories: currentState.categories,
+      cases: cases,
+      hasMoreCases: cases.length >= AppConstants.defaultPageSize,
+      currentPage: 1,
+      selectedCategoryId: event.categoryId == 0 ? null : event.categoryId,
+    ));
   }
 
   String _mapFailureToMessage(failure) {
