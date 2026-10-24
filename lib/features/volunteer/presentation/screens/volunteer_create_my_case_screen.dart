@@ -1,25 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../config/themes/app_theme.dart';
 import '../../../../services/locator.dart';
 import '../../../organization/domain/entities/org_case.dart';
 import '../../../user/domain/entities/category.dart';
 import '../../../user/domain/entities/governorate.dart';
 import '../../../user/domain/repositories/user_repository.dart';
 import '../../domain/repositories/volunteer_repository.dart';
-
-// Light of Impact - Warm Hopeful Color System
-const Color backgroundOffWhite = Color(0xFFF9FAFB);
-const Color softBlueTint = Color(0xFFF3F8FC);
-const Color friendlyBlue = Color(0xFF1E7ABF);
-const Color softTeal = Color(0xFF3BB3A9);
-const Color textDark = Color(0xFF1F2937);
-const Color textMedium = Color(0xFF6B7280);
-const Color textLight = Color(0xFF9CA3AF);
-const Color cardWhite = Color(0xFFFFFFFF);
-const Color borderLight = Color(0xFFE5E7EB);
-const Color inputFill = Color(0xFFF7FAFC);
 
 class VolunteerCreateMyCaseScreen extends StatefulWidget {
   final OrgCase? existing;
@@ -31,7 +21,7 @@ class VolunteerCreateMyCaseScreen extends StatefulWidget {
 }
 
 class _VolunteerCreateMyCaseScreenState
-    extends State<VolunteerCreateMyCaseScreen> {
+  extends State<VolunteerCreateMyCaseScreen> {
   static const Set<String> _syrianGovernorates = {
     'دمشق',
     'ريف دمشق',
@@ -66,6 +56,19 @@ class _VolunteerCreateMyCaseScreenState
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _selectedImages = [];
   final List<String> _existingImageUrls = [];
+
+  // Dynamic Theme Colors
+  bool get _isDark => mounted && Theme.of(context).brightness == Brightness.dark;
+  Color get _backgroundOffWhite => _isDark ? AppColors.darkScaffold : const Color(0xFFF8FAFC);
+  Color get _softBlueTint => _isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
+  Color get _friendlyBlue => _isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E7ABF);
+  Color get _softTeal => const Color(0xFF10B981);
+  Color get _textDark => _isDark ? Colors.white : const Color(0xFF0F172A);
+  Color get _textMedium => _isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+  Color get _textLight => _isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+  Color get _cardWhite => _isDark ? AppColors.darkCard : const Color(0xFFFFFFFF);
+  Color get _borderLight => _isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0);
+  Color get _inputFill => _isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
 
   @override
   void initState() {
@@ -169,7 +172,7 @@ class _VolunteerCreateMyCaseScreenState
       (f) => _toast('فشل: ${f.message}', Colors.red),
       (_) {
         _toast(isEdit ? 'تم تعديل الحالة' : 'تم إنشاء الحالة (قيد المراجعة)',
-            softTeal);
+            _softTeal);
         Navigator.pop(context, true);
       },
     );
@@ -178,7 +181,10 @@ class _VolunteerCreateMyCaseScreenState
   void _toast(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg),
+        content: Text(
+          msg,
+          style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -197,22 +203,31 @@ class _VolunteerCreateMyCaseScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundOffWhite,
+      backgroundColor: _backgroundOffWhite,
       appBar: AppBar(
-        backgroundColor: backgroundOffWhite,
+        backgroundColor: _isDark ? AppColors.darkCard : _backgroundOffWhite,
         elevation: 0,
         title: Text(
           widget.existing != null ? 'تعديل الحالة' : 'إضافة حالة',
-          style: TextStyle(
+          style: GoogleFonts.cairo(
             fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: textDark,
+            fontWeight: FontWeight.w800,
+            color: _textDark,
           ),
         ),
         centerTitle: true,
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: SizedBox(
+                width: 32,
+                height: 32,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(_friendlyBlue),
+                ),
+              ),
+            )
           : Form(
               key: _formKey,
               child: ListView(
@@ -241,7 +256,13 @@ class _VolunteerCreateMyCaseScreenState
                     label: 'القسم',
                     items: _categories
                         .map((c) =>
-                            DropdownMenuItem(value: c.id, child: Text(c.name)))
+                            DropdownMenuItem(
+                              value: c.id,
+                              child: Text(
+                                c.name,
+                                style: GoogleFonts.cairo(color: _textDark, fontSize: 14),
+                              ),
+                            ))
                         .toList(),
                     onChanged: (v) => setState(() => _categoryId = v),
                   ),
@@ -251,7 +272,13 @@ class _VolunteerCreateMyCaseScreenState
                     label: 'المحافظة',
                     items: _governorates
                         .map((g) =>
-                            DropdownMenuItem(value: g.id, child: Text(g.name)))
+                            DropdownMenuItem(
+                              value: g.id,
+                              child: Text(
+                                g.name,
+                                style: GoogleFonts.cairo(color: _textDark, fontSize: 14),
+                              ),
+                            ))
                         .toList(),
                     onChanged: (v) => setState(() => _governorateId = v),
                   ),
@@ -259,27 +286,51 @@ class _VolunteerCreateMyCaseScreenState
                   _dropdown<String>(
                     value: _priority,
                     label: 'الأولوية',
-                    items: const [
-                      DropdownMenuItem(value: 'urgent', child: Text('عاجل')),
-                      DropdownMenuItem(value: 'high', child: Text('مرتفع')),
-                      DropdownMenuItem(value: 'medium', child: Text('متوسط')),
-                      DropdownMenuItem(value: 'low', child: Text('منخفض')),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'urgent',
+                        child: Text(
+                          'عاجل',
+                          style: GoogleFonts.cairo(color: Colors.red, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'high',
+                        child: Text(
+                          'مرتفع',
+                          style: GoogleFonts.cairo(color: Colors.orange, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'medium',
+                        child: Text(
+                          'متوسط',
+                          style: GoogleFonts.cairo(color: Colors.amber.shade700, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'low',
+                        child: Text(
+                          'منخفض',
+                          style: GoogleFonts.cairo(color: Colors.green, fontWeight: FontWeight.w600),
+                        ),
+                      ),
                     ],
                     onChanged: (v) =>
                         setState(() => _priority = v ?? 'medium'),
                   ),
-                  const SizedBox(height: 16),
-                  _sectionTitle('الصور'),
+                  const SizedBox(height: 20),
+                  _sectionTitle('الصور والمرفقات'),
                   const SizedBox(height: 12),
                   GestureDetector(
                     onTap: _pickImages,
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: softBlueTint,
+                        color: _softBlueTint,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: friendlyBlue.withAlpha(30),
+                          color: _friendlyBlue.withAlpha(40),
                           width: 1,
                         ),
                       ),
@@ -288,20 +339,21 @@ class _VolunteerCreateMyCaseScreenState
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: cardWhite,
+                              color: _cardWhite,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: borderLight),
+                              border: Border.all(color: _borderLight),
                             ),
                             child: Icon(Icons.add_photo_alternate_outlined,
-                                color: friendlyBlue),
+                                color: _friendlyBlue),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'اضغط لإضافة صور (اختياري)',
-                              style: TextStyle(
-                                color: textMedium,
-                                fontWeight: FontWeight.w600,
+                              style: GoogleFonts.cairo(
+                                color: _textMedium,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
                               ),
                             ),
                           ),
@@ -313,9 +365,10 @@ class _VolunteerCreateMyCaseScreenState
                   if (_existingImageUrls.isNotEmpty) ...[
                     Text(
                       'الصور الحالية',
-                      style: TextStyle(
-                        color: textMedium,
-                        fontWeight: FontWeight.w600,
+                      style: GoogleFonts.cairo(
+                        color: _textMedium,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -342,10 +395,10 @@ class _VolunteerCreateMyCaseScreenState
                                 height: double.infinity,
                                 errorBuilder: (context, error, stackTrace) =>
                                     Container(
-                                  color: softBlueTint,
+                                  color: _softBlueTint,
                                   child: Icon(
                                     Icons.broken_image_outlined,
-                                    color: textLight,
+                                    color: _textLight,
                                   ),
                                 ),
                               ),
@@ -416,23 +469,25 @@ class _VolunteerCreateMyCaseScreenState
                         );
                       },
                     ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   GestureDetector(
                     onTap: _submitting ? null : _submit,
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [friendlyBlue, softTeal],
+                        gradient: LinearGradient(
+                          colors: [_friendlyBlue, _softTeal],
                         ),
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: friendlyBlue.withAlpha(30),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        boxShadow: _isDark
+                            ? []
+                            : [
+                                BoxShadow(
+                                  color: _friendlyBlue.withAlpha(30),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                       ),
                       child: Center(
                         child: _submitting
@@ -446,8 +501,8 @@ class _VolunteerCreateMyCaseScreenState
                                 ),
                               )
                             : Text(
-                                widget.existing != null ? 'حفظ' : 'إنشاء',
-                                style: const TextStyle(
+                                widget.existing != null ? 'حفظ التعديلات' : 'إنشاء الحالة',
+                                style: GoogleFonts.cairo(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 15,
@@ -465,10 +520,10 @@ class _VolunteerCreateMyCaseScreenState
   Widget _sectionTitle(String title) {
     return Text(
       title,
-      style: TextStyle(
+      style: GoogleFonts.cairo(
         fontSize: 14,
-        fontWeight: FontWeight.w700,
-        color: friendlyBlue,
+        fontWeight: FontWeight.w800,
+        color: _friendlyBlue,
       ),
     );
   }
@@ -483,18 +538,20 @@ class _VolunteerCreateMyCaseScreenState
       controller: controller,
       maxLines: maxLines,
       validator: validator,
+      style: GoogleFonts.cairo(color: _textDark, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: GoogleFonts.cairo(color: _textMedium, fontSize: 13),
         filled: true,
-        fillColor: inputFill,
+        fillColor: _inputFill,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: borderLight),
+          borderSide: BorderSide(color: _borderLight),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: friendlyBlue, width: 1.5),
+          borderSide: BorderSide(color: _friendlyBlue, width: 1.5),
         ),
       ),
     );
@@ -507,24 +564,25 @@ class _VolunteerCreateMyCaseScreenState
     required void Function(T?) onChanged,
   }) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       items: items,
       onChanged: onChanged,
+      dropdownColor: _cardWhite,
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: GoogleFonts.cairo(color: _textMedium, fontSize: 13),
         filled: true,
-        fillColor: inputFill,
+        fillColor: _inputFill,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: borderLight),
+          borderSide: BorderSide(color: _borderLight),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: friendlyBlue, width: 1.5),
+          borderSide: BorderSide(color: _friendlyBlue, width: 1.5),
         ),
       ),
     );
   }
 }
-

@@ -26,6 +26,12 @@ class User extends Authenticatable
         'api_token',
         'address',
         'registration_number',
+        'volunteer_rank',
+        'volunteer_points',
+        'volunteer_hours',
+        'badges',
+        'has_vehicle',
+        'availability_time',
     ];
 
     protected $hidden = [
@@ -41,6 +47,10 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'skills' => 'array',
+            'badges' => 'array',
+            'has_vehicle' => 'boolean',
+            'volunteer_hours' => 'float',
+            'volunteer_points' => 'integer',
         ];
     }
 
@@ -62,5 +72,27 @@ class User extends Authenticatable
     public function volunteerApplications()
     {
         return $this->hasMany(VolunteerApplication::class);
+    }
+
+    public function fieldAssessments()
+    {
+        return $this->hasMany(FieldAssessment::class, 'volunteer_id');
+    }
+
+    public function aidDistributions()
+    {
+        return $this->hasMany(AidDistribution::class, 'volunteer_id');
+    }
+
+    public function emergencyMissions()
+    {
+        return $this->belongsToMany(EmergencyMission::class, 'mission_volunteers', 'volunteer_id', 'mission_id')
+            ->withPivot(['status', 'checked_in_at'])
+            ->withTimestamps();
+    }
+
+    public function volunteerLogs()
+    {
+        return $this->hasMany(VolunteerLog::class, 'volunteer_id');
     }
 }

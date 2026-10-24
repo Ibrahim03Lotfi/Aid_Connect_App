@@ -1,0 +1,148 @@
+Athar (أثر) — Next-Gen Smart Humanitarian Operating System
+Master Engineering Implementation Plan (Graduation Project)
+System Overview & Architecture
+Transforming the current basic prototype into an enterprise-grade digital operating system for a premier humanitarian relief organization ("منظمة أثر للإغاثة والتنمية").
+
+The ecosystem comprises:
+
+Laravel 12 Backend API & Web Command Center: Central database, business logic, queued AI jobs, and executive operations dashboard.
+Flutter Mobile Application (Dual Mode):
+Citizen / Donor Mode: Guided aid request wizard, case tracking, impact stories reels, and volunteer recruitment.
+Volunteer Field Mode: NFC smart card scanner, offline-first aid distribution, field assessment visits, emergency missions, and certified volunteer passport.
+Physical NFC Smart Aid Cards: Contactless cards for beneficiary families with printed QR fallback for instant, offline-capable verification.
+Applied Multimodal AI Engine: Medical document auditing, shelter damage visual analysis, NLP urgency triage, fraud detection, and smart volunteer matchmaking.
+Phase 1: Data Architecture & Backend Foundation (Laravel 12)
+1.1 Database Schema Restructuring & Migrations
+ Retain and enhance existing users, categories, governorates, and notifications.
+ [NEW] beneficiaries / families Table:
+id, head_of_family_name, national_id (unique), phone, family_members_count, governorate_id, address, latitude, longitude, vulnerability_score (1-100), nfc_card_uid (unique, nullable), qr_token (unique), status (active, suspended, pending_verification).
+ [NEW] nfc_cards Table:
+id, card_uid (unique), family_id (FK), issued_at, is_active, last_scanned_at.
+ [NEW] aid_campaigns Table:
+id, title, description, category_id, start_date, end_date, status (active, completed), items_allocated_per_family, total_target_families, distributed_families_count.
+ [NEW] aid_distributions Table:
+id, campaign_id (FK), family_id (FK), volunteer_id (FK), verification_method (nfc_tap, qr_scan, manual_override), latitude, longitude, distributed_at, offline_synced_at, notes.
+ [NEW] field_assessments Table:
+id, case_id (FK to aid_cases), volunteer_id (FK), living_condition_score (1-10), housing_type, heating_available (bool), income_source, photos_json, ai_assessment_summary, inspector_notes, visited_at.
+ [NEW] emergency_missions Table:
+id, title, description, urgency (critical, urgent, normal), required_skills_json, latitude, longitude, volunteers_needed, volunteers_joined, status (open, in_progress, completed).
+ [NEW] volunteer_logs Table:
+id, volunteer_id (FK), mission_type (field_visit, aid_distribution, emergency_sos), hours_logged, points_earned, reference_id, verified_by_admin.
+1.2 Core Business Services & Policies
+Role Enforcement: Strict distinction between citizen, volunteer, and admin.
+Distribution Controller: Atomic verification endpoint preventing double-claiming (POST /api/distributions/verify-and-deliver).
+NFC Token Encryption: Cryptographic hash to verify genuine card tokens.
+Phase 2: Mobile UI/UX Overhaul & Citizen Experience (Flutter)
+2.1 Modern Visual Design System
+Color Tokens:
+Deep Slate (#0B1120), Dark Surface (#1E293B), Clean Off-White (#F8FAFC).
+Primary Brand Blue (#0284C7), Emerald Impact (#10B981), Amber Urgent (#F59E0B), Rose Emergency (#EF4444).
+Typography & Localization:
+Complete RTL Arabic layout with GoogleFonts.ibmPlexSansArabic.
+Harmonious typography hierarchy (Display, Headlines, Body, Overline).
+Aesthetic Enhancements:
+Frosted glass cards (Glassmorphism with BackdropFilter).
+Micro-animations with flutter_animate (fade-in, slide-up, scale on tap).
+Shimmer loading skeletons for all list views.
+Seamless Light / Dark Theme switching.
+2.2 Citizen & Donor Features
+Top Impact Stories Carousel ("سلسلة أثر" - Instagram Stories style):
+Circular avatar thumbnails at the top of the Home Screen with gradient borders.
+Full-screen interactive story viewer (15-second photo/video highlights of recent field distributions with impact captions).
+Guided Visual Aid Request Wizard (معالج طلب المساعدة المرئي):
+3-Step intuitive wizard replacing complex text forms:
+Category Picker: Interactive cards with modern SVG/3D icons (Medical 🩺, Nutrition 🍞, Heating/Winter ❄️, Education 📚).
+Urgency & Family Info: Family count slider, governorate picker, urgent vs. recurring toggle.
+Evidence & Voice Note: Camera attachment for printed documents/damage photos + 60-second voice note recorder.
+Support & Track Cases:
+Case detail screens with animated progress rings (Target vs. Delivered).
+Four-stage interactive delivery tracking timeline: تم التقديم ➔ الكشف الميداني ➔ تجهيز المساعدة ➔ تم التسليم والتوثيق.
+"Join as a Volunteer" Onboarding Funnel:
+Multi-step volunteer application: Skill selection (Medic, Driver, Logistics, Media, Social Worker), vehicle ownership, availability schedule.
+Phase 3: Volunteer Field Mode & Physical NFC Smart Cards (Flutter)
+3.1 Dual-Mode Authentication & Dynamic Field Dashboard
+When a logged-in user has the volunteer role, the bottom navigation adds the "بوابة الميدان" (Field Ops Tab).
+Today's Field Mission Summary:
+Assigned home visits today.
+Active distribution campaign link.
+Emergency SOS alerts feed.
+3.2 NFC Smart Card & Dual-Verification Engine
+NFC Reader Integration (nfc_manager):
+Background NFC listening when the "Aid Scanner" screen is active.
+Tap physical NFC card to phone back ➔ Haptic vibration + Audio chime.
+Instant modal with beneficiary details: Family name, members, allocation status.
+One-tap button: "تأكيد التسليم الفوري" (Instantly registers delivery with GPS and timestamp).
+Printed QR Fallback Scanner (mobile_scanner):
+High-speed camera barcode scanner for older phones or damaged cards.
+Offline-First Synchronization:
+Local caching of distribution records when internet drops in rural areas/camps.
+Automatic background sync to Laravel when internet is detected.
+3.3 Field Assessment Module (الكشف والتقييم الميداني)
+Step-by-step field survey for assigned home visits:
+Living condition rating (1-10) with photo capture.
+Printed hospital invoice or diagnostic report photo upload.
+Pre-fill summary with AI assistance.
+Submission directly marks the case as "Field Verified" on the Web Dashboard.
+3.4 Volunteer Gamification & Certified Digital Passport
+Gamified Profile:
+Total verified volunteer hours.
+Number of families helped.
+Badges earned (المستجيب السريع، مسعف معتمد، نجم الميدان).
+Verifiable PDF Certificate Generator:
+Generates an official, beautiful PDF Volunteer Resume with Athar letterhead.
+Embedded verification QR code linking to a public verification page.
+Phase 4: Applied AI Intelligence Engine (Backend Services)
+4.1 Printed Hospital Document & Invoice Auditor (Multimodal Vision AI)
+Uses Gemini Vision API to analyze uploaded printed hospital invoices, MRI/CT scans, and pharmacy bills:
+Extracts patient diagnosis, hospital name, invoice date, and total requested amount.
+Mathematical integrity check: Validates that line items sum correctly to the total.
+Auto-fills case metadata to eliminate manual admin data entry.
+4.2 Shelter & Living Condition Visual Severity Analyzer
+Volunteer takes photos of rooms (damp walls, cracked masonry, broken windows, lack of heating).
+Vision model evaluates structural severity (Low, Moderate, Critical) and adds a visual assessment badge to the report.
+4.3 Arabic NLP Urgency & Triage Classifier
+Analyzes case titles, descriptions, and family situations.
+Generates an Urgency Index (1 to 100):
+Critical cases (infants needing emergency surgery, hypothermia risk) score 90+ and trigger priority alerts.
+4.4 Perceptual Image Fingerprinting & Fraud Detection
+Calculates image perceptual hash (pHash) on all uploaded photos.
+Flags duplicate image submissions across different cases or past years to prevent recycled photo fraud.
+4.5 Intelligent Volunteer Matchmaker
+When an emergency mission is published (e.g. medical convoy or disaster relief), matches the required skills and closest GPS coordinates to recommend the top 5 volunteers.
+Phase 5: Web Command Center Dashboard (Laravel + Tailwind CSS)
+5.1 The Administrative Operations Portal
+Built directly within the Laravel backend (using Tailwind CSS, Alpine.js, and Blade components) for unified management.
+Top Metrics Bar (KPIs):
+Total families aided this month.
+Active volunteers currently in the field.
+Pending field visits.
+Warehouse aid packages remaining.
+5.2 Live Field Operations Map (GIS)
+Full-screen interactive map (Leaflet.js / OpenStreetMap):
+Red Markers: Pending aid requests awaiting inspection.
+Blue Dots: Active field volunteers on duty.
+Green Markers: Aid distribution centers and warehouses.
+Filter by Governorate/District: Damascus, Rural Damascus, Aleppo, Homs, etc.
+5.3 AI Triage & Case Review Board (Kanban / Table)
+Incoming cases with AI urgency badges, extracted invoice totals, and duplicate warnings.
+Action toolbar: Assign Field Volunteer, Approve for Funding, Reject with Reason.
+5.4 Beneficiary & NFC Card Management Hub
+Register families, assign/pair an NFC card UID, print card labels with QR code.
+Full distribution audit history per family (what they received, when, and by which volunteer).
+5.5 Logistics & Aid Inventory System
+Track warehouse stock: Food baskets, winter blankets, baby milk, heating fuel liters.
+Automatic inventory decrement as field volunteers scan NFC cards.
+5.6 Executive Analytics & Exportable PDF Reports
+Visual distribution charts (families helped by governorate, volunteer performance).
+One-click export of the Official Humanitarian Impact Report (تقرير الأثر الإنساني السنوي) as an executive PDF.
+Phase 6: Testing, Polish & Graduation Defense Rehearsal
+6.1 Data Seeding & Realistic Scenarios
+Seed realistic governorates, Syrian neighborhoods, sample hospital bills, and family records.
+Program 2-3 physical NFC cards/tags for live testing.
+6.2 The Winning Defense Demo Walkthrough
+Stage 1 (Web Dashboard): Show the Live GIS Map with active operations in Syria.
+Stage 2 (Citizen Mobile): Submit an aid request using the guided wizard and attach a printed hospital report.
+Stage 3 (AI Magic): Web dashboard immediately shows AI triage, extracted medical costs, and fraud check.
+Stage 4 (Volunteer Field Visit): Volunteer mobile app accepts inspection, submits damage photos.
+Stage 5 (Physical NFC Tap): Volunteer phone scans physical beneficiary NFC card $\rightarrow$ BEEP! Instant delivery verification on both phone and web projector.
+Stage 6 (Certificate): Export the verified Volunteer Passport PDF with dynamic verification QR code.

@@ -8,16 +8,7 @@ import '../bloc/org_cases_bloc/org_cases_bloc.dart';
 import '../bloc/org_cases_bloc/org_cases_event.dart';
 import '../bloc/org_cases_bloc/org_cases_state.dart';
 
-// Light of Impact - Warm Hopeful Color System
-const Color backgroundOffWhite = Color(0xFFF9FAFB);
-const Color softBlueTint = Color(0xFFF3F8FC);
-const Color friendlyBlue = Color(0xFF1E7ABF);
-const Color softTeal = Color(0xFF3BB3A9);
-const Color textDark = Color(0xFF1F2937);
-const Color textMedium = Color(0xFF6B7280);
-const Color textLight = Color(0xFF9CA3AF);
-const Color cardWhite = Color(0xFFFFFFFF);
-const Color borderLight = Color(0xFFE5E7EB);
+import '../../../../config/themes/app_theme.dart';
 
 class OrgCasesScreen extends StatelessWidget {
   const OrgCasesScreen({super.key});
@@ -42,6 +33,17 @@ class OrgCasesView extends StatefulWidget {
 
 class _OrgCasesViewState extends State<OrgCasesView> {
   final ScrollController _scrollController = ScrollController();
+
+  bool get _isDark => mounted && Theme.of(context).brightness == Brightness.dark;
+  Color get backgroundOffWhite => _isDark ? AppColors.darkScaffold : const Color(0xFFF9FAFB);
+  Color get softBlueTint => _isDark ? const Color(0xFF1E293B) : const Color(0xFFF3F8FC);
+  Color get friendlyBlue => _isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E7ABF);
+  Color get softTeal => const Color(0xFF3BB3A9);
+  Color get textDark => _isDark ? Colors.white : const Color(0xFF1F2937);
+  Color get textMedium => _isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+  Color get textLight => _isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+  Color get cardWhite => _isDark ? AppColors.darkCard : const Color(0xFFFFFFFF);
+  Color get borderLight => _isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB);
 
   @override
   void initState() {
@@ -147,8 +149,8 @@ class _OrgCasesViewState extends State<OrgCasesView> {
                       itemCount: cases.length + (state is OrgCasesLoadingMore ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (index == cases.length) {
-                          return const Padding(
-                            padding: EdgeInsets.all(16),
+                          return Padding(
+                            padding: const EdgeInsets.all(16),
                             child: Center(
                               child: SizedBox(
                                 width: 24,
@@ -209,7 +211,7 @@ class _OrgCasesViewState extends State<OrgCasesView> {
                 ),
               ],
             ),
-            child: const Center(
+            child: Center(
               child: SizedBox(
                 width: 28,
                 height: 28,
@@ -283,7 +285,7 @@ class _OrgCasesViewState extends State<OrgCasesView> {
                         color: friendlyBlue.withAlpha(15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.edit_outlined,
                         color: friendlyBlue,
                         size: 18,
@@ -595,7 +597,7 @@ class _OrgCasesViewState extends State<OrgCasesView> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   colors: [friendlyBlue, softTeal],
                 ),
                 borderRadius: BorderRadius.circular(12),

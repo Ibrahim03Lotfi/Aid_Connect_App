@@ -1,6 +1,9 @@
 class AppConstants {
   // API
-  static const String baseUrl = 'http://172.20.10.5:8000/api';
+  static const String baseUrl = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://192.168.1.6:8000/api',
+  );
 
   // Pagination
   static const int defaultPageSize = 10;

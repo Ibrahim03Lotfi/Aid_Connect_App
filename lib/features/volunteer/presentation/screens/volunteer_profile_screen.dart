@@ -1,20 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/routes/app_routes.dart';
+import '../../../../config/themes/app_theme.dart';
+import '../../../../core/theme/theme_service.dart';
 import '../../../../services/locator.dart';
 import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../domain/repositories/volunteer_repository.dart';
-
-// Light of Impact - Warm Hopeful Color System
-const Color backgroundOffWhite = Color(0xFFF9FAFB);
-const Color softBlueTint = Color(0xFFF3F8FC);
-const Color friendlyBlue = Color(0xFF1E7ABF);
-const Color softTeal = Color(0xFF3BB3A9);
-const Color textDark = Color(0xFF1F2937);
-const Color textMedium = Color(0xFF6B7280);
-const Color textLight = Color(0xFF9CA3AF);
-const Color cardWhite = Color(0xFFFFFFFF);
-const Color borderLight = Color(0xFFE5E7EB);
-const Color inputFill = Color(0xFFF7FAFC);
 
 class VolunteerProfileScreen extends StatefulWidget {
   const VolunteerProfileScreen({super.key});
@@ -53,6 +45,19 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
     'تصميم',
     'برمجة',
   ];
+
+  // Dynamic Theme Colors
+  bool get _isDark => mounted && Theme.of(context).brightness == Brightness.dark;
+  Color get _backgroundOffWhite => _isDark ? AppColors.darkScaffold : const Color(0xFFF8FAFC);
+  Color get _softBlueTint => _isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
+  Color get _friendlyBlue => _isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E7ABF);
+  Color get _softTeal => const Color(0xFF3BB3A9);
+  Color get _textDark => _isDark ? Colors.white : const Color(0xFF0F172A);
+  Color get _textMedium => _isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+  Color get _textLight => _isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+  Color get _cardWhite => _isDark ? AppColors.darkCard : const Color(0xFFFFFFFF);
+  Color get _borderLight => _isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0);
+  Color get _inputFill => _isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
 
   @override
   void initState() {
@@ -100,7 +105,7 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
           _isLoading = false;
           _isEditing = false;
         });
-        _showSnackBar('تم حفظ البيانات بنجاح!', softTeal);
+        _showSnackBar('تم حفظ البيانات بنجاح!', _softTeal);
       },
     );
   }
@@ -128,7 +133,7 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
         _newPasswordController.clear();
         _confirmPasswordController.clear();
         Navigator.pop(context);
-        _showSnackBar('تم تغيير كلمة المرور بنجاح!', softTeal);
+        _showSnackBar('تم تغيير كلمة المرور بنجاح!', _softTeal);
       },
     );
   }
@@ -136,7 +141,10 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(
+          message,
+          style: GoogleFonts.cairo(fontWeight: FontWeight.w600, color: Colors.white),
+        ),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -151,22 +159,30 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: cardWhite,
+        backgroundColor: _cardWhite,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: _borderLight),
         ),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: friendlyBlue.withAlpha(15),
+                color: _friendlyBlue.withAlpha(25),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.lock_outline, color: friendlyBlue),
+              child: Icon(Icons.lock_outline, color: _friendlyBlue),
             ),
             const SizedBox(width: 12),
-            const Text('تغيير كلمة المرور'),
+            Text(
+              'تغيير كلمة المرور',
+              style: GoogleFonts.cairo(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                color: _textDark,
+              ),
+            ),
           ],
         ),
         content: Form(
@@ -218,15 +234,21 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
               _newPasswordController.clear();
               _confirmPasswordController.clear();
             },
-            child: Text('إلغاء', style: TextStyle(color: textMedium)),
+            child: Text(
+              'إلغاء',
+              style: GoogleFonts.cairo(
+                color: _textMedium,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           GestureDetector(
             onTap: _isLoading ? null : _changePassword,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [friendlyBlue, softTeal],
+                gradient: LinearGradient(
+                  colors: [_friendlyBlue, _softTeal],
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -239,9 +261,9 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text(
+                  : Text(
                       'تغيير',
-                      style: TextStyle(
+                      style: GoogleFonts.cairo(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),
@@ -264,31 +286,32 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
       controller: controller,
       obscureText: isObscure,
       validator: validator,
+      style: GoogleFonts.cairo(color: _textDark, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: textMedium, fontSize: 13),
-        prefixIcon: Icon(Icons.lock_outline, color: friendlyBlue, size: 20),
+        labelStyle: GoogleFonts.cairo(color: _textMedium, fontSize: 13),
+        prefixIcon: Icon(Icons.lock_outline, color: _friendlyBlue, size: 20),
         suffixIcon: GestureDetector(
           onTap: onToggle,
           child: Icon(
             isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-            color: textLight,
+            color: _textLight,
             size: 20,
           ),
         ),
         filled: true,
-        fillColor: inputFill,
+        fillColor: _inputFill,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: borderLight),
+          borderSide: BorderSide(color: _borderLight),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: borderLight),
+          borderSide: BorderSide(color: _borderLight),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: friendlyBlue, width: 1.5),
+          borderSide: BorderSide(color: _friendlyBlue, width: 1.5),
         ),
       ),
     );
@@ -298,29 +321,43 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: cardWhite,
+        backgroundColor: _cardWhite,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: _borderLight),
         ),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.red.withAlpha(15),
+                color: Colors.red.withAlpha(20),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.logout, color: Colors.red),
             ),
             const SizedBox(width: 12),
-            const Text('تأكيد تسجيل الخروج'),
+            Text(
+              'تأكيد تسجيل الخروج',
+              style: GoogleFonts.cairo(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                color: _textDark,
+              ),
+            ),
           ],
         ),
-        content: const Text('هل أنت متأكد من تسجيل الخروج؟'),
+        content: Text(
+          'هل أنت متأكد من تسجيل الخروج؟',
+          style: GoogleFonts.cairo(fontSize: 14, color: _textMedium),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('إلغاء', style: TextStyle(color: textMedium)),
+            child: Text(
+              'إلغاء',
+              style: GoogleFonts.cairo(color: _textMedium, fontWeight: FontWeight.w600),
+            ),
           ),
           GestureDetector(
             onTap: () async {
@@ -339,9 +376,9 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                 color: Colors.red,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
+              child: Text(
                 'خروج',
-                style: TextStyle(
+                style: GoogleFonts.cairo(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
                 ),
@@ -356,16 +393,17 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundOffWhite,
+      backgroundColor: _backgroundOffWhite,
       appBar: AppBar(
-        backgroundColor: backgroundOffWhite,
+        automaticallyImplyLeading: false,
+        backgroundColor: _isDark ? AppColors.darkCard : _backgroundOffWhite,
         elevation: 0,
         title: Text(
           'الملف الشخصي',
-          style: TextStyle(
+          style: GoogleFonts.cairo(
             fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: textDark,
+            fontWeight: FontWeight.w800,
+            color: _textDark,
           ),
         ),
         centerTitle: true,
@@ -374,12 +412,12 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
             Container(
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: cardWhite,
+                color: _cardWhite,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: borderLight, width: 1),
+                border: Border.all(color: _borderLight, width: 1),
               ),
               child: IconButton(
-                icon: Icon(Icons.edit_outlined, color: friendlyBlue, size: 20),
+                icon: Icon(Icons.edit_outlined, color: _friendlyBlue, size: 20),
                 onPressed: () => setState(() => _isEditing = true),
               ),
             )
@@ -387,8 +425,8 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
             Container(
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [friendlyBlue, softTeal],
+                gradient: LinearGradient(
+                  colors: [_friendlyBlue, _softTeal],
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -448,23 +486,26 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: cardWhite,
+              color: _cardWhite,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: friendlyBlue.withAlpha(20),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              border: Border.all(color: _borderLight),
+              boxShadow: _isDark
+                  ? []
+                  : [
+                      BoxShadow(
+                        color: _friendlyBlue.withAlpha(20),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
             ),
-            child: const Center(
+            child: Center(
               child: SizedBox(
                 width: 28,
                 height: 28,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(friendlyBlue),
+                  valueColor: AlwaysStoppedAnimation<Color>(_friendlyBlue),
                 ),
               ),
             ),
@@ -484,19 +525,21 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [friendlyBlue, softTeal],
+                  gradient: LinearGradient(
+                    colors: [_friendlyBlue, _softTeal],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: friendlyBlue.withAlpha(30),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                  boxShadow: _isDark
+                      ? []
+                      : [
+                          BoxShadow(
+                            color: _friendlyBlue.withAlpha(30),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                 ),
                 child: const Icon(
                   Icons.volunteer_activism,
@@ -511,12 +554,12 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: cardWhite,
+                      color: _cardWhite,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: borderLight),
+                      border: Border.all(color: _borderLight),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha(10),
+                          color: Colors.black.withAlpha(15),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -525,7 +568,7 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                     child: Icon(
                       Icons.camera_alt_outlined,
                       size: 18,
-                      color: friendlyBlue,
+                      color: _friendlyBlue,
                     ),
                   ),
                 ),
@@ -534,18 +577,19 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
           const SizedBox(height: 16),
           Text(
             _profile?['name'] ?? '',
-            style: TextStyle(
+            style: GoogleFonts.cairo(
               fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: textDark,
+              fontWeight: FontWeight.w800,
+              color: _textDark,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'متطوع منذ ${_profile?['joinedAt'] ?? _profile?['joined_at'] ?? ''}',
-            style: TextStyle(
-              fontSize: 14,
-              color: textMedium,
+            style: GoogleFonts.cairo(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: _textMedium,
             ),
           ),
         ],
@@ -556,10 +600,10 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w700,
-        color: friendlyBlue,
+      style: GoogleFonts.cairo(
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+        color: _friendlyBlue,
       ),
     );
   }
@@ -567,16 +611,18 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
   Widget _buildPersonalInfoSection() {
     return Container(
       decoration: BoxDecoration(
-        color: cardWhite,
+        color: _cardWhite,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderLight, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: friendlyBlue.withAlpha(8),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: _borderLight, width: 1),
+        boxShadow: _isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: _friendlyBlue.withAlpha(8),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -624,10 +670,10 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: GoogleFonts.cairo(
             fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: textMedium,
+            fontWeight: FontWeight.w700,
+            color: _textMedium,
           ),
         ),
         const SizedBox(height: 6),
@@ -635,21 +681,22 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
           TextFormField(
             controller: controller,
             keyboardType: keyboardType,
+            style: GoogleFonts.cairo(color: _textDark, fontSize: 14),
             decoration: InputDecoration(
-              prefixIcon: Icon(icon, color: friendlyBlue, size: 20),
+              prefixIcon: Icon(icon, color: _friendlyBlue, size: 20),
               filled: true,
-              fillColor: inputFill,
+              fillColor: _inputFill,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: borderLight),
+                borderSide: BorderSide(color: _borderLight),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: borderLight),
+                borderSide: BorderSide(color: _borderLight),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: friendlyBlue, width: 1.5),
+                borderSide: BorderSide(color: _friendlyBlue, width: 1.5),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12,
@@ -662,20 +709,21 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
-              color: softBlueTint,
+              color: _softBlueTint,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderLight),
+              border: Border.all(color: _borderLight),
             ),
             child: Row(
               children: [
-                Icon(icon, color: textLight, size: 20),
+                Icon(icon, color: _textLight, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     controller?.text ?? value ?? '',
-                    style: TextStyle(
+                    style: GoogleFonts.cairo(
                       fontSize: 14,
-                      color: textDark,
+                      fontWeight: FontWeight.w600,
+                      color: _textDark,
                     ),
                   ),
                 ),
@@ -692,10 +740,10 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
       children: [
         Text(
           'نبذة عني',
-          style: TextStyle(
+          style: GoogleFonts.cairo(
             fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: textMedium,
+            fontWeight: FontWeight.w700,
+            color: _textMedium,
           ),
         ),
         const SizedBox(height: 6),
@@ -703,20 +751,21 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
           TextFormField(
             controller: _bioController,
             maxLines: 4,
+            style: GoogleFonts.cairo(color: _textDark, fontSize: 14),
             decoration: InputDecoration(
               filled: true,
-              fillColor: inputFill,
+              fillColor: _inputFill,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: borderLight),
+                borderSide: BorderSide(color: _borderLight),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: borderLight),
+                borderSide: BorderSide(color: _borderLight),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: friendlyBlue, width: 1.5),
+                borderSide: BorderSide(color: _friendlyBlue, width: 1.5),
               ),
               contentPadding: const EdgeInsets.all(12),
             ),
@@ -726,15 +775,15 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: softBlueTint,
+              color: _softBlueTint,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderLight),
+              border: Border.all(color: _borderLight),
             ),
             child: Text(
               _bioController.text.isEmpty ? 'لا توجد نبذة' : _bioController.text,
-              style: TextStyle(
+              style: GoogleFonts.cairo(
                 fontSize: 14,
-                color: _bioController.text.isEmpty ? textLight : textDark,
+                color: _bioController.text.isEmpty ? _textLight : _textDark,
               ),
             ),
           ),
@@ -745,16 +794,18 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
   Widget _buildSkillsSection() {
     return Container(
       decoration: BoxDecoration(
-        color: cardWhite,
+        color: _cardWhite,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderLight, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: friendlyBlue.withAlpha(8),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: _borderLight, width: 1),
+        boxShadow: _isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: _friendlyBlue.withAlpha(8),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -778,10 +829,10 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSelected ? friendlyBlue.withAlpha(20) : softBlueTint,
+                        color: isSelected ? _friendlyBlue.withAlpha(30) : _softBlueTint,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected ? friendlyBlue : borderLight,
+                          color: isSelected ? _friendlyBlue : _borderLight,
                           width: isSelected ? 1.5 : 1,
                         ),
                       ),
@@ -789,13 +840,13 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (isSelected)
-                            Icon(Icons.check, color: friendlyBlue, size: 16),
+                            Icon(Icons.check, color: _friendlyBlue, size: 16),
                           if (isSelected) const SizedBox(width: 4),
                           Text(
                             skill,
-                            style: TextStyle(
-                              color: isSelected ? friendlyBlue : textMedium,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            style: GoogleFonts.cairo(
+                              color: isSelected ? _friendlyBlue : _textMedium,
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                               fontSize: 13,
                             ),
                           ),
@@ -807,9 +858,12 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
               )
             : _skills.isEmpty
                 ? Center(
-                    child: Text(
-                      'لم تضف أي مهارات بعد',
-                      style: TextStyle(color: textMedium),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        'لم تضف أي مهارات بعد',
+                        style: GoogleFonts.cairo(color: _textMedium, fontSize: 13),
+                      ),
                     ),
                   )
                 : Wrap(
@@ -819,15 +873,15 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: friendlyBlue.withAlpha(15),
+                          color: _friendlyBlue.withAlpha(25),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: friendlyBlue.withAlpha(50), width: 1),
+                          border: Border.all(color: _friendlyBlue.withAlpha(50), width: 1),
                         ),
                         child: Text(
                           skill,
-                          style: TextStyle(
-                            color: friendlyBlue,
-                            fontWeight: FontWeight.w600,
+                          style: GoogleFonts.cairo(
+                            color: _friendlyBlue,
+                            fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
                         ),
@@ -839,29 +893,111 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
   }
 
   Widget _buildActionsSection() {
+    final themeService = locator<ThemeService>();
+
     return Container(
       decoration: BoxDecoration(
-        color: cardWhite,
+        color: _cardWhite,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderLight, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: friendlyBlue.withAlpha(8),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: _borderLight, width: 1),
+        boxShadow: _isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: _friendlyBlue.withAlpha(8),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(
         children: [
+          // Theme Switcher Setting
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: themeService.themeModeNotifier,
+            builder: (context, currentMode, _) {
+              return Column(
+                children: [
+                  _buildMenuItem(
+                    icon: Icons.palette_outlined,
+                    title: 'مظهر التطبيق',
+                    subtitle: currentMode == ThemeMode.dark
+                        ? 'الوضع الليلي مفعّل'
+                        : currentMode == ThemeMode.light
+                            ? 'الوضع النهاري مفعّل'
+                            : 'تلقائي (حسب إعدادات النظام)',
+                    color: const Color(0xFF8B5CF6),
+                    trailingWidget: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          currentMode == ThemeMode.dark
+                              ? 'ليلي'
+                              : currentMode == ThemeMode.light
+                                  ? 'نهاري'
+                                  : 'تلقائي',
+                          style: GoogleFonts.cairo(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: _friendlyBlue,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.arrow_forward_ios, size: 14, color: _textLight),
+                      ],
+                    ),
+                    onTap: () => _showThemeSelectionDialog(currentMode),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
+                    child: Row(
+                      children: [
+                        _buildThemeSegmentButton(
+                          icon: Icons.light_mode_rounded,
+                          label: 'نهاري',
+                          isSelected: currentMode == ThemeMode.light,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            themeService.setThemeMode(ThemeMode.light);
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildThemeSegmentButton(
+                          icon: Icons.dark_mode_rounded,
+                          label: 'ليلي',
+                          isSelected: currentMode == ThemeMode.dark,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            themeService.setThemeMode(ThemeMode.dark);
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildThemeSegmentButton(
+                          icon: Icons.brightness_auto_rounded,
+                          label: 'تلقائي',
+                          isSelected: currentMode == ThemeMode.system,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            themeService.setThemeMode(ThemeMode.system);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          Divider(color: _borderLight, height: 1, indent: 56),
+
           _buildMenuItem(
             icon: Icons.lock_outline,
             title: 'تغيير كلمة المرور',
             subtitle: 'تحديث كلمة المرور الخاصة بك',
-            color: friendlyBlue,
+            color: _friendlyBlue,
             onTap: _showChangePasswordDialog,
           ),
-          Divider(color: borderLight, height: 1, indent: 56),
+          Divider(color: _borderLight, height: 1, indent: 56),
           _buildMenuItem(
             icon: Icons.notifications_outlined,
             title: 'إعدادات الإشعارات',
@@ -869,15 +1005,15 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
             color: Colors.orange,
             onTap: () {},
           ),
-          Divider(color: borderLight, height: 1, indent: 56),
+          Divider(color: _borderLight, height: 1, indent: 56),
           _buildMenuItem(
             icon: Icons.help_outline,
             title: 'المساعدة والدعم',
             subtitle: 'تواصل مع فريق الدعم',
-            color: softTeal,
+            color: _softTeal,
             onTap: () {},
           ),
-          Divider(color: borderLight, height: 1, indent: 56),
+          Divider(color: _borderLight, height: 1, indent: 56),
           _buildMenuItem(
             icon: Icons.logout,
             title: 'تسجيل الخروج',
@@ -891,12 +1027,212 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
     );
   }
 
+  Widget _buildThemeSegmentButton({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (_isDark
+                    ? _friendlyBlue.withAlpha(45)
+                    : _friendlyBlue.withAlpha(20))
+                : (_isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected
+                  ? _friendlyBlue
+                  : (_isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? _friendlyBlue : _textMedium,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: GoogleFonts.cairo(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected ? _friendlyBlue : _textMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showThemeSelectionDialog(ThemeMode currentMode) {
+    final themeService = locator<ThemeService>();
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: _cardWhite,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: _borderLight),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B5CF6).withAlpha(25),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.palette_outlined, color: Color(0xFF8B5CF6), size: 22),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'مظهر التطبيق',
+              style: GoogleFonts.cairo(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                color: _textDark,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildThemeRadioTile(
+              title: 'الوضع النهاري (فاتح)',
+              subtitle: 'ألوان ساطعة مريحة للميدان المشمس',
+              icon: Icons.light_mode_rounded,
+              mode: ThemeMode.light,
+              currentMode: currentMode,
+              onSelect: () {
+                HapticFeedback.selectionClick();
+                themeService.setThemeMode(ThemeMode.light);
+                Navigator.pop(dialogCtx);
+              },
+            ),
+            const SizedBox(height: 8),
+            _buildThemeRadioTile(
+              title: 'الوضع الليلي (داكن)',
+              subtitle: 'خلفية داكنة موفرة للطاقة ومريحة للعين',
+              icon: Icons.dark_mode_rounded,
+              mode: ThemeMode.dark,
+              currentMode: currentMode,
+              onSelect: () {
+                HapticFeedback.selectionClick();
+                themeService.setThemeMode(ThemeMode.dark);
+                Navigator.pop(dialogCtx);
+              },
+            ),
+            const SizedBox(height: 8),
+            _buildThemeRadioTile(
+              title: 'تلقائي (حسب النظام)',
+              subtitle: 'يتزامن تلقائياً مع إعدادات جهازك',
+              icon: Icons.brightness_auto_rounded,
+              mode: ThemeMode.system,
+              currentMode: currentMode,
+              onSelect: () {
+                HapticFeedback.selectionClick();
+                themeService.setThemeMode(ThemeMode.system);
+                Navigator.pop(dialogCtx);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(
+              'إغلاق',
+              style: GoogleFonts.cairo(color: _textMedium, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeRadioTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required ThemeMode mode,
+    required ThemeMode currentMode,
+    required VoidCallback onSelect,
+  }) {
+    final isSelected = mode == currentMode;
+    return InkWell(
+      onTap: onSelect,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? _friendlyBlue.withAlpha(_isDark ? 35 : 18)
+              : _softBlueTint,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? _friendlyBlue : _borderLight,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected ? _friendlyBlue : _textMedium,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.cairo(
+                      fontSize: 13,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      color: isSelected ? _friendlyBlue : _textDark,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.cairo(
+                      fontSize: 10.5,
+                      color: _textMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle_rounded, color: _friendlyBlue, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMenuItem({
     required IconData icon,
     required String title,
     required String subtitle,
     required Color color,
     required VoidCallback onTap,
+    Widget? trailingWidget,
     bool isDanger = false,
   }) {
     return ListTile(
@@ -904,29 +1240,29 @@ class _VolunteerProfileScreenState extends State<VolunteerProfileScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: color.withAlpha(15),
+          color: color.withAlpha(20),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: color, size: 20),
       ),
       title: Text(
         title,
-        style: TextStyle(
+        style: GoogleFonts.cairo(
           fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: isDanger ? Colors.red : textDark,
+          fontWeight: FontWeight.w700,
+          color: isDanger ? Colors.red : _textDark,
         ),
       ),
       subtitle: subtitle.isNotEmpty
           ? Text(
               subtitle,
-              style: TextStyle(
+              style: GoogleFonts.cairo(
                 fontSize: 12,
-                color: textMedium,
+                color: _textMedium,
               ),
             )
           : null,
-      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: textLight),
+      trailing: trailingWidget ?? Icon(Icons.arrow_forward_ios, size: 14, color: _textLight),
     );
   }
 

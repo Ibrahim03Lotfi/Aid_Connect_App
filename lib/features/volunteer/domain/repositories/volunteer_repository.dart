@@ -79,4 +79,48 @@ abstract class VolunteerRepository {
   });
 
   Future<Either<Failure, void>> deleteMyCase(int caseId);
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Phase 3: Volunteer Field Mode & NFC Smart Aid Cards
+  // ═══════════════════════════════════════════════════════════════════
+
+  // 1. NFC / QR Smart Beneficiary Lookup
+  Future<Either<Failure, Map<String, dynamic>>> lookupBeneficiary(String token);
+
+  // 2. Active Aid Campaigns for Field Distribution
+  Future<Either<Failure, List<Map<String, dynamic>>>> getActiveCampaigns();
+
+  // 3. Verify & Deliver Aid with double-claim prevention
+  Future<Either<Failure, Map<String, dynamic>>> verifyAndDeliverAid({
+    required int campaignId,
+    required String token,
+    required String verificationMethod,
+    double? latitude,
+    double? longitude,
+    String? notes,
+  });
+
+  // 4. Submit Field Assessment Survey
+  Future<Either<Failure, Map<String, dynamic>>> submitFieldAssessment({
+    required int beneficiaryId,
+    required int livingConditionScore,
+    required String housingType,
+    required bool heatingAvailable,
+    double? monthlyIncome,
+    String? incomeSource,
+    String? inspectorNotes,
+    String? urgencyRating,
+  });
+
+  // 5. Emergency SOS Missions
+  Future<Either<Failure, List<Map<String, dynamic>>>> getEmergencyMissions();
+  Future<Either<Failure, void>> joinEmergencyMission(int missionId);
+  Future<Either<Failure, void>> checkInEmergencyMission(int missionId);
+
+  // 6. Volunteer Certified Digital Passport & Badges
+  Future<Either<Failure, Map<String, dynamic>>> getVolunteerPassport();
+
+  // 7. Offline-First Distribution Queue
+  Future<int> getPendingOfflineDistributionsCount();
+  Future<Either<Failure, int>> syncOfflineDistributions();
 }

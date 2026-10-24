@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../config/themes/app_theme.dart';
 import 'org_dashboard_screen.dart';
-import 'org_cases_screen.dart';
 import 'create_case_screen.dart';
 import 'org_profile_screen.dart';
 
@@ -53,19 +53,29 @@ class _OrgMainScreenState extends State<OrgMainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgOffWhite = isDark ? AppColors.darkScaffold : const Color(0xFFF9FAFB);
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final activeBlue = isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E7ABF);
+    final textMed = isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+    final borderCol = isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB);
+
     return Scaffold(
-      backgroundColor: backgroundOffWhite,
+      backgroundColor: bgOffWhite,
       body: _getScreens()[_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: cardWhite,
+          color: cardBg,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
           ),
+          border: Border(
+            top: BorderSide(color: borderCol, width: 1),
+          ),
           boxShadow: [
             BoxShadow(
-              color: friendlyBlue.withAlpha(15),
+              color: isDark ? Colors.black26 : activeBlue.withAlpha(15),
               blurRadius: 20,
               offset: const Offset(0, -4),
             ),
@@ -86,11 +96,13 @@ class _OrgMainScreenState extends State<OrgMainScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? friendlyBlue.withAlpha(15)
+                          ? activeBlue.withAlpha(isDark ? 35 : 15)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? friendlyBlue.withAlpha(30) : Colors.transparent,
+                        color: isSelected
+                            ? activeBlue.withAlpha(isDark ? 60 : 30)
+                            : Colors.transparent,
                         width: 1,
                       ),
                     ),
@@ -100,8 +112,8 @@ class _OrgMainScreenState extends State<OrgMainScreen> {
                         Icon(
                           isSelected ? item['activeIcon'] : item['icon'],
                           color: isSelected
-                              ? friendlyBlue
-                              : textMedium,
+                              ? activeBlue
+                              : textMed,
                           size: 24,
                         ),
                         const SizedBox(height: 4),
@@ -111,8 +123,8 @@ class _OrgMainScreenState extends State<OrgMainScreen> {
                             fontSize: 12,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: isSelected
-                                ? friendlyBlue
-                                : textMedium,
+                                ? activeBlue
+                                : textMed,
                           ),
                         ),
                       ],

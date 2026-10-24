@@ -1,92 +1,68 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../../../config/routes/app_routes.dart';
+import '../../../../config/themes/app_theme.dart';
 import '../../../../services/locator.dart';
 import '../../domain/entities/case.dart';
-import '../../domain/repositories/user_repository.dart';
+import '../bloc/favorites_bloc/favorites_cubit.dart';
+import '../widgets/sham_cash_donation_sheet.dart';
 
-// Light of Impact - Warm Hopeful Color System
-const Color backgroundOffWhite = Color(0xFFF9FAFB);
-const Color softBlueTint = Color(0xFFF3F8FC);
-const Color friendlyBlue = Color(0xFF1E7ABF);
-const Color softTeal = Color(0xFF3BB3A9);
-const Color textDark = Color(0xFF1F2937);
-const Color textMedium = Color(0xFF6B7280);
-const Color textLight = Color(0xFF9CA3AF);
-const Color cardWhite = Color(0xFFFFFFFF);
-const Color borderLight = Color(0xFFE5E7EB);
-
-class FavoritesScreen extends StatefulWidget {
+class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
 
   @override
-  State<FavoritesScreen> createState() => _FavoritesScreenState();
-}
-
-class _FavoritesScreenState extends State<FavoritesScreen> {
-  late Future<List<Case>> _favoritesFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _favoritesFuture = _loadFavorites();
-  }
-
-  Future<List<Case>> _loadFavorites() async {
-    final repository = locator<UserRepository>();
-    final result = await repository.getFavorites();
-    return result.fold(
-      (failure) => [],
-      (cases) => cases,
+  Widget build(BuildContext context) {
+    return BlocProvider.value(
+      value: locator<FavoritesCubit>(),
+      child: const _FavoritesView(),
     );
   }
+}
 
-  Future<void> _refreshFavorites() async {
-    setState(() {
-      _favoritesFuture = _loadFavorites();
-    });
-  }
+class _FavoritesView extends StatelessWidget {
+  const _FavoritesView();
+
+  static final NumberFormat _currencyFormatter = NumberFormat('#,###');
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: backgroundOffWhite,
-      appBar: AppBar(
-        backgroundColor: backgroundOffWhite,
-        elevation: 0,
-        title: Text(
-          'المفضلات',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: textDark,
-          ),
-        ),
-        centerTitle: true,
-        
-      ),
-      body: FutureBuilder<List<Case>>(
-        future: _favoritesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildLoadingView();
+      backgroundColor: isDark ? AppColors.darkScaffold : const Color(0xFFF8FAFC),
+      appBar: _buildAppBar(context, isDark),
+      body: BlocBuilder<FavoritesCubit, FavoritesState>(
+        builder: (context, state) {
+          if (state.isLoading && state.favoriteCases.isEmpty) {
+            return _buildLoadingView(isDark);
           }
 
-          if (snapshot.hasError || snapshot.data == null || snapshot.data!.isEmpty) {
-            return _buildEmptyState(context);
+          final cases = state.favoriteCases;
+          if (cases.isEmpty) {
+            return _buildEmptyState(context, isDark);
           }
 
-          final cases = snapshot.data!;
           return RefreshIndicator(
-            onRefresh: _refreshFavorites,
-            color: friendlyBlue,
-            backgroundColor: cardWhite,
+            onRefresh: () async {
+              await context.read<FavoritesCubit>().loadFavorites();
+            },
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+            backgroundColor: isDark ? AppColors.darkCard : Colors.white,
             child: ListView.builder(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               itemCount: cases.length,
               itemBuilder: (context, index) {
                 final caseItem = cases[index];
-                return _FavoriteCard(
+                return _FavoriteItemCard(
+                  key: ValueKey(caseItem.id),
                   caseItem: caseItem,
+                  currencyFormatter: _currencyFormatter,
+                  isDark: isDark,
                   onTap: () {
                     Navigator.pushNamed(
                       context,
@@ -95,8 +71,26 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     );
                   },
                   onRemove: () {
-                    // TODO: Implement remove from favorites
-                    _refreshFavorites();
+                    HapticFeedback.mediumImpact();
+                    context.read<FavoritesCubit>().removeFavorite(caseItem.id);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(Icons.info_outline_rounded, color: Colors.white, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              'تمت إزالة الحالة من المفضلة',
+                              style: GoogleFonts.cairo(color: Colors.white, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                        backgroundColor: const Color(0xFF0F172A),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
                   },
                 );
               },
@@ -107,7 +101,102 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _buildLoadingView() {
+  PreferredSizeWidget _buildAppBar(BuildContext context, bool isDark) {
+    return AppBar(
+      backgroundColor: isDark ? AppColors.darkCard : Colors.white,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      automaticallyImplyLeading: false,
+      titleSpacing: 16,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(0.5),
+        child: Divider(
+          height: 0.5,
+          thickness: 0.5,
+          color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+        ),
+      ),
+      // Aligned to the Top Right in Arabic RTL
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Center(
+              child: Text(
+                'أثر',
+                style: GoogleFonts.cairo(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'المفضلة',
+                style: GoogleFonts.cairo(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                  height: 1.1,
+                ),
+              ),
+              Text(
+                'الحالات الإنسانية المحفوظة',
+                style: GoogleFonts.cairo(
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  height: 1.1,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        BlocBuilder<FavoritesCubit, FavoritesState>(
+          builder: (context, state) {
+            final count = state.favoriteCases.length;
+            return Container(
+              margin: const EdgeInsets.only(left: 16, right: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkBorder : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$count حالات',
+                style: GoogleFonts.cairo(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white70 : const Color(0xFF475569),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingView(bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -116,11 +205,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: cardWhite,
+              color: isDark ? AppColors.darkCard : Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: friendlyBlue.withAlpha(20),
+                  color: isDark ? Colors.black38 : const Color(0xFF0284C7).withAlpha(20),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
@@ -132,18 +221,18 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 height: 28,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(friendlyBlue),
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0284C7)),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           Text(
-            'جاري التحميل...',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: textMedium,
+            'جاري تحميل المفضلة...',
+            style: GoogleFonts.cairo(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
             ),
           ),
         ],
@@ -151,7 +240,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, bool isDark) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -159,61 +248,62 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 100,
-              height: 100,
+              width: 90,
+              height: 90,
               decoration: BoxDecoration(
-                color: softBlueTint,
+                color: isDark ? AppColors.darkCard : const Color(0xFFF1F5F9),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.favorite_outline,
-                color: friendlyBlue.withAlpha(80),
-                size: 48,
+              child: const Icon(
+                Icons.bookmark_border_rounded,
+                color: Color(0xFF0284C7),
+                size: 44,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Text(
-              'لا توجد حالات مفضلة',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: textDark,
+              'قائمتك المفضلة فارغة',
+              style: GoogleFonts.cairo(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'يمكنك إضافة الحالات إلى المفضلة للوصول إليها بسهولة',
+              'احفظ الحالات الإنسانية التي تهمك للوصول إليها ومتابعتها والتبرع لها في أي وقت',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: textMedium,
+              style: GoogleFonts.cairo(
+                fontSize: 13,
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                height: 1.4,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 26),
             GestureDetector(
               onTap: () {
                 Navigator.pushNamed(context, AppRoutes.home);
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [friendlyBlue, softTeal],
+                    colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: friendlyBlue.withAlpha(30),
-                      blurRadius: 12,
+                      color: const Color(0xFF0284C7).withAlpha(40),
+                      blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: const Text(
-                  'تصفح الحالات',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                child: Text(
+                  'استكشاف الحالات الآن',
+                  style: GoogleFonts.cairo(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),
                 ),
@@ -226,183 +316,271 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 }
 
-class _FavoriteCard extends StatelessWidget {
+// ---------------------------------------------------------------------------
+// Favorite Item Card Styled to Match Home Screen Excellence
+// ---------------------------------------------------------------------------
+class _FavoriteItemCard extends StatelessWidget {
   final Case caseItem;
+  final NumberFormat currencyFormatter;
+  final bool isDark;
   final VoidCallback onTap;
-  final VoidCallback? onRemove;
+  final VoidCallback onRemove;
 
-  const _FavoriteCard({
+  const _FavoriteItemCard({
+    super.key,
     required this.caseItem,
+    required this.currencyFormatter,
+    required this.isDark,
     required this.onTap,
-    this.onRemove,
+    required this.onRemove,
   });
 
   @override
   Widget build(BuildContext context) {
+    final collected = caseItem.collectedAmount;
+    final target = caseItem.targetAmount;
+    final percent = (caseItem.progressPercent / 100.0).clamp(0.0, 1.0);
+    final isUrgent = caseItem.priority.toLowerCase() == 'urgent';
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: cardWhite,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderLight, width: 1),
+          color: isDark ? const Color(0xFF161F30) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark ? const Color(0xFF26334D) : const Color(0xFFE2E8F0),
+            width: 1.0,
+          ),
           boxShadow: [
             BoxShadow(
-              color: friendlyBlue.withAlpha(10),
+              color: isDark ? Colors.black26 : const Color(0xFF0F172A).withAlpha(8),
               blurRadius: 12,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
+          padding: const EdgeInsets.all(12),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: caseItem.thumbnail != null
-                    ? Image.network(
-                        caseItem.thumbnail!,
-                        width: 72,
-                        height: 72,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _buildPlaceholder(),
-                      )
-                    : _buildPlaceholder(),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Thumbnail
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: SizedBox(
+                      width: 84,
+                      height: 84,
+                      child: caseItem.thumbnail != null && caseItem.thumbnail!.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: caseItem.thumbnail!,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => Container(
+                                color: isDark ? AppColors.darkCard : const Color(0xFFF1F5F9),
+                              ),
+                              errorWidget: (_, __, ___) => _buildFallbackImage(),
+                            )
+                          : _buildFallbackImage(),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Title & Meta
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
+                        Row(
+                          children: [
+                            if (isUrgent)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                margin: const EdgeInsets.only(left: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEE2E2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'عاجل',
+                                  style: GoogleFonts.cairo(
+                                    color: const Color(0xFFDC2626),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkCard : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                caseItem.category.isNotEmpty ? caseItem.category : 'إغاثة',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            // Remove Button
+                            GestureDetector(
+                              onTap: onRemove,
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0284C7).withAlpha(18),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.bookmark_rounded,
+                                  color: Color(0xFF0284C7),
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          caseItem.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.cairo(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            height: 1.3,
                           ),
-                          decoration: BoxDecoration(
-                            color: _getPriorityColor(caseItem.priority)
-                                .withAlpha(20),
-                            borderRadius: BorderRadius.circular(8),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 12,
+                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              caseItem.governorate.isNotEmpty ? caseItem.governorate : 'دمشق',
+                              style: GoogleFonts.cairo(
+                                fontSize: 11,
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Progress Bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: percent,
+                  backgroundColor: isDark ? const Color(0xFF26334D) : const Color(0xFFE2E8F0),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
+                  minHeight: 4.5,
+                ),
+              ),
+              const SizedBox(height: 6),
+
+              // Funding Metrics & Sham Cash Action
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'تم جمع ',
+                        style: GoogleFonts.cairo(
+                          fontSize: 10.5,
+                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        ),
+                      ),
+                      Text(
+                        '${currencyFormatter.format(collected)} / ${currencyFormatter.format(target)} ل.س (${caseItem.progressPercent}%)',
+                        style: GoogleFonts.cairo(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF10B981),
+                        ),
+                      ),
+                    ],
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => ShamCashDonationSheet(caseItem: caseItem),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF059669), Color(0xFF10B981)],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.volunteer_activism_rounded,
+                            color: Colors.white,
+                            size: 12,
                           ),
-                          child: Text(
-                            _getPriorityText(caseItem.priority),
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: _getPriorityColor(caseItem.priority),
-                              fontWeight: FontWeight.w700,
+                          const SizedBox(width: 4),
+                          Text(
+                            'تبرع • شام كاش',
+                            style: GoogleFonts.cairo(
+                              color: Colors.white,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.remove_red_eye_outlined,
-                          size: 14,
-                          color: textMedium,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${caseItem.views}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: textMedium,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      caseItem.title,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: textDark,
+                        ],
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: textLight,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${caseItem.governorate} • ${caseItem.category}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: textMedium,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: onRemove,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withAlpha(15),
-                    shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.favorite_rounded,
-                    color: Colors.red,
-                    size: 22,
-                  ),
-                ),
+                ],
               ),
             ],
           ),
         ),
       ),
-    );
+    )
+        .animate()
+        .fadeIn(duration: 200.ms)
+        .slideY(begin: 0.05, end: 0, duration: 200.ms);
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildFallbackImage() {
     return Container(
-      width: 72,
-      height: 72,
-      decoration: BoxDecoration(
-        color: softBlueTint,
-        borderRadius: BorderRadius.circular(12),
+      color: isDark ? AppColors.darkCard : const Color(0xFFF1F5F9),
+      child: const Center(
+        child: Icon(
+          Icons.volunteer_activism_rounded,
+          color: Color(0xFF0284C7),
+          size: 28,
+        ),
       ),
-      child: Icon(Icons.image_outlined, color: textLight, size: 28),
     );
-  }
-
-  Color _getPriorityColor(String priority) {
-    switch (priority) {
-      case 'urgent':
-        return Colors.red;
-      case 'high':
-        return Colors.orange;
-      case 'medium':
-        return Colors.amber.shade700;
-      default:
-        return Colors.green;
-    }
-  }
-
-  String _getPriorityText(String priority) {
-    switch (priority) {
-      case 'urgent':
-        return 'عاجل';
-      case 'high':
-        return 'مرتفع';
-      case 'medium':
-        return 'متوسط';
-      default:
-        return 'عادي';
-    }
   }
 }

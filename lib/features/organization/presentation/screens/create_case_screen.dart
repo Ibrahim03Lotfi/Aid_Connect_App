@@ -9,17 +9,7 @@ import '../../../user/domain/entities/governorate.dart';
 import '../../../user/domain/repositories/user_repository.dart';
 import '../../domain/repositories/organization_repository.dart';
 
-// Light of Impact - Warm Hopeful Color System
-const Color backgroundOffWhite = Color(0xFFF9FAFB);
-const Color softBlueTint = Color(0xFFF3F8FC);
-const Color friendlyBlue = Color(0xFF1E7ABF);
-const Color softTeal = Color(0xFF3BB3A9);
-const Color textDark = Color(0xFF1F2937);
-const Color textMedium = Color(0xFF6B7280);
-const Color textLight = Color(0xFF9CA3AF);
-const Color cardWhite = Color(0xFFFFFFFF);
-const Color borderLight = Color(0xFFE5E7EB);
-const Color inputFill = Color(0xFFF7FAFC);
+import '../../../../config/themes/app_theme.dart';
 
 class CreateCaseScreen extends StatefulWidget {
   final OrgCase? existing;
@@ -30,6 +20,18 @@ class CreateCaseScreen extends StatefulWidget {
 }
 
 class _CreateCaseScreenState extends State<CreateCaseScreen> {
+  bool get _isDark => mounted && Theme.of(context).brightness == Brightness.dark;
+  Color get backgroundOffWhite => _isDark ? AppColors.darkScaffold : const Color(0xFFF9FAFB);
+  Color get softBlueTint => _isDark ? const Color(0xFF1E293B) : const Color(0xFFF3F8FC);
+  Color get friendlyBlue => _isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E7ABF);
+  Color get softTeal => const Color(0xFF3BB3A9);
+  Color get textDark => _isDark ? Colors.white : const Color(0xFF1F2937);
+  Color get textMedium => _isDark ? const Color(0xFF94A3B8) : const Color(0xFF6B7280);
+  Color get textLight => _isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+  Color get cardWhite => _isDark ? AppColors.darkCard : const Color(0xFFFFFFFF);
+  Color get borderLight => _isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB);
+  Color get inputFill => _isDark ? const Color(0xFF0F172A) : const Color(0xFFF7FAFC);
+
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -395,7 +397,7 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
+                        gradient: LinearGradient(
                           colors: [friendlyBlue, softTeal],
                         ),
                         borderRadius: BorderRadius.circular(16),
@@ -468,7 +470,7 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: friendlyBlue, width: 1.5),
+          borderSide: BorderSide(color: friendlyBlue, width: 1.5),
         ),
       ),
     );
@@ -495,7 +497,7 @@ class _CreateCaseScreenState extends State<CreateCaseScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: friendlyBlue, width: 1.5),
+          borderSide: BorderSide(color: friendlyBlue, width: 1.5),
         ),
       ),
     );

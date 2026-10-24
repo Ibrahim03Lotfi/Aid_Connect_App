@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/network/http_client.dart';
+import '../core/theme/theme_service.dart';
 import '../features/auth/data/repositories/auth_repository_impl.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
@@ -9,6 +10,7 @@ import '../features/notifications/domain/repositories/notification_repository.da
 import '../features/user/data/repositories/user_repository_impl.dart';
 import '../features/user/domain/repositories/user_repository.dart';
 import '../features/user/presentation/bloc/case_details_bloc/case_details_bloc.dart';
+import '../features/user/presentation/bloc/favorites_bloc/favorites_cubit.dart';
 import '../features/user/presentation/bloc/governorate_bloc/governorate_bloc.dart';
 import '../features/user/presentation/bloc/home_bloc/home_bloc.dart';
 import '../features/user/presentation/bloc/profile_bloc/profile_bloc.dart';
@@ -30,6 +32,10 @@ Future<void> setupLocator() async {
   // Services
   locator.registerLazySingleton<LocalStorageService>(
     () => LocalStorageService(locator<SharedPreferences>()),
+  );
+
+  locator.registerLazySingleton<ThemeService>(
+    () => ThemeService(locator<LocalStorageService>()),
   );
 
   locator.registerLazySingleton<NotificationService>(
@@ -89,6 +95,13 @@ Future<void> setupLocator() async {
     () => ProfileBloc(
       userRepository: locator<UserRepository>(),
       authRepository: locator<AuthRepository>(),
+      localStorage: locator<LocalStorageService>(),
+    ),
+  );
+
+  locator.registerLazySingleton<FavoritesCubit>(
+    () => FavoritesCubit(
+      userRepository: locator<UserRepository>(),
       localStorage: locator<LocalStorageService>(),
     ),
   );

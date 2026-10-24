@@ -338,4 +338,81 @@ class UserRepositoryImpl implements UserRepository {
       return Left(ServerFailure('فشل في تغيير كلمة المرور'));
     }
   }
+
+  @override
+  Future<Either<Failure, int>> toggleLikeCase(int caseId) async {
+    try {
+      final response = await _httpClient.post<Map<String, dynamic>>(
+        '/cases/$caseId/like',
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+      final count = (response.data?['likes_count'] as num?)?.toInt() ?? 1;
+      return Right(count);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (e) {
+      return Left(ServerFailure('فشل في تسجيل الإعجاب'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Map<String, dynamic>>>> getCaseComments(int caseId) async {
+    try {
+      final response = await _httpClient.get<List<dynamic>>(
+        '/cases/$caseId/comments',
+        fromJsonT: (data) => data as List<dynamic>,
+      );
+      final list = (response.data ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      return Right(list);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (e) {
+      return Left(ServerFailure('فشل في تحميل التعليقات'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> addCaseComment(int caseId, String comment) async {
+    try {
+      final response = await _httpClient.post<Map<String, dynamic>>(
+        '/cases/$caseId/comments',
+        data: {'comment': comment},
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+      return Right(response.data ?? {});
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (e) {
+      return Left(ServerFailure('فشل في إضافة التعليق'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> donateToCase({
+    required int caseId,
+    required double amount,
+    required String paymentMethod,
+    String? donorName,
+    String? donorPhone,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'amount': amount,
+        'payment_method': paymentMethod,
+      };
+      if (donorName != null) body['donor_name'] = donorName;
+      if (donorPhone != null) body['donor_phone'] = donorPhone;
+
+      final response = await _httpClient.post<Map<String, dynamic>>(
+        '/cases/$caseId/donate',
+        data: body,
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+      return Right(response.data ?? {});
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (e) {
+      return Left(ServerFailure('فشل في إتمام عملية التبرع'));
+    }
+  }
 }

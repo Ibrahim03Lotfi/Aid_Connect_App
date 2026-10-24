@@ -1,20 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/routes/app_routes.dart';
+import '../../../../config/themes/app_theme.dart';
 import '../../../../services/locator.dart';
 import '../../../organization/domain/entities/org_case.dart';
 import '../../../user/domain/entities/case.dart';
 import '../../domain/repositories/volunteer_repository.dart';
-
-// Light of Impact - Warm Hopeful Color System
-const Color backgroundOffWhite = Color(0xFFF9FAFB);
-const Color softBlueTint = Color(0xFFF3F8FC);
-const Color friendlyBlue = Color(0xFF1E7ABF);
-const Color softTeal = Color(0xFF3BB3A9);
-const Color textDark = Color(0xFF1F2937);
-const Color textMedium = Color(0xFF6B7280);
-const Color textLight = Color(0xFF9CA3AF);
-const Color cardWhite = Color(0xFFFFFFFF);
-const Color borderLight = Color(0xFFE5E7EB);
 
 class VolunteerAvailableCasesScreen extends StatefulWidget {
   const VolunteerAvailableCasesScreen({super.key});
@@ -27,6 +18,18 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
   bool _isLoading = true;
   List<Case> _cases = [];
   final _searchController = TextEditingController();
+
+  // Dynamic Theme Colors
+  bool get _isDark => mounted && Theme.of(context).brightness == Brightness.dark;
+  Color get _backgroundOffWhite => _isDark ? AppColors.darkScaffold : const Color(0xFFF8FAFC);
+  Color get _softBlueTint => _isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
+  Color get _friendlyBlue => _isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E7ABF);
+  Color get _softTeal => const Color(0xFF3BB3A9);
+  Color get _textDark => _isDark ? Colors.white : const Color(0xFF0F172A);
+  Color get _textMedium => _isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+  Color get _textLight => _isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+  Color get _cardWhite => _isDark ? AppColors.darkCard : const Color(0xFFFFFFFF);
+  Color get _borderLight => _isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0);
 
   @override
   void initState() {
@@ -51,9 +54,13 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('فشل تحميل الحالات: ${failure.message}'),
+                  content: Text(
+                    'فشل تحميل الحالات: ${failure.message}',
+                    style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
                   backgroundColor: Colors.red,
                   behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               );
             }
@@ -107,16 +114,16 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundOffWhite,
+      backgroundColor: _backgroundOffWhite,
       appBar: AppBar(
-        backgroundColor: backgroundOffWhite,
+        backgroundColor: _isDark ? AppColors.darkCard : _backgroundOffWhite,
         elevation: 0,
         title: Text(
           'بحث الحالات (المتطوعين)',
-          style: TextStyle(
+          style: GoogleFonts.cairo(
             fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: textDark,
+            fontWeight: FontWeight.w800,
+            color: _textDark,
           ),
         ),
         centerTitle: true,
@@ -131,8 +138,8 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
                     ? _buildEmptyState()
                     : RefreshIndicator(
                         onRefresh: _loadCases,
-                        color: friendlyBlue,
-                        backgroundColor: cardWhite,
+                        color: _friendlyBlue,
+                        backgroundColor: _cardWhite,
                         child: ListView.builder(
                           padding: const EdgeInsets.all(20),
                           itemCount: _cases.length,
@@ -154,23 +161,26 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: cardWhite,
+              color: _cardWhite,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: friendlyBlue.withAlpha(20),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              border: Border.all(color: _borderLight),
+              boxShadow: _isDark
+                  ? []
+                  : [
+                      BoxShadow(
+                        color: _friendlyBlue.withAlpha(20),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
             ),
-            child: const Center(
+            child: Center(
               child: SizedBox(
                 width: 28,
                 height: 28,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(friendlyBlue),
+                  valueColor: AlwaysStoppedAnimation<Color>(_friendlyBlue),
                 ),
               ),
             ),
@@ -178,10 +188,10 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
           const SizedBox(height: 20),
           Text(
             'جاري تحميل الحالات...',
-            style: TextStyle(
+            style: GoogleFonts.cairo(
               fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: textMedium,
+              fontWeight: FontWeight.w600,
+              color: _textMedium,
             ),
           ),
         ],
@@ -195,18 +205,20 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: cardWhite,
+              color: _cardWhite,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: borderLight, width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: friendlyBlue.withAlpha(8),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              border: Border.all(color: _borderLight, width: 1),
+              boxShadow: _isDark
+                  ? []
+                  : [
+                      BoxShadow(
+                        color: _friendlyBlue.withAlpha(8),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
             ),
             child: Row(
               children: [
@@ -214,24 +226,24 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
                   child: TextField(
                     controller: _searchController,
                     onSubmitted: (_) => _loadCases(),
+                    style: GoogleFonts.cairo(color: _textDark, fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'ابحث باسم الحالة أو المحافظة...',
-                      hintStyle: TextStyle(color: textLight, fontSize: 14),
-                      prefixIcon: Icon(Icons.search, color: friendlyBlue),
+                      hintStyle: GoogleFonts.cairo(color: _textLight, fontSize: 13),
+                      prefixIcon: Icon(Icons.search, color: _friendlyBlue, size: 20),
                       filled: true,
-                      fillColor: softBlueTint,
+                      fillColor: _softBlueTint,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: borderLight),
+                        borderSide: BorderSide(color: _borderLight),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: borderLight),
+                        borderSide: BorderSide(color: _borderLight),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide:
-                            const BorderSide(color: friendlyBlue, width: 1.5),
+                        borderSide: BorderSide(color: _friendlyBlue, width: 1.5),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -244,17 +256,16 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
                 GestureDetector(
                   onTap: _loadCases,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [friendlyBlue, softTeal],
+                      gradient: LinearGradient(
+                        colors: [_friendlyBlue, _softTeal],
                       ),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Text(
+                    child: Text(
                       'بحث',
-                      style: TextStyle(
+                      style: GoogleFonts.cairo(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
@@ -268,11 +279,11 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
           const SizedBox(height: 10),
           Row(
             children: [
-              Icon(Icons.shuffle_outlined, size: 16, color: textMedium),
+              Icon(Icons.shuffle_outlined, size: 16, color: _textMedium),
               const SizedBox(width: 6),
               Text(
-                'النتائج تظهر بشكل عشوائي',
-                style: TextStyle(color: textMedium, fontSize: 12),
+                'النتائج تظهر بشكل عشوائي ومناسب للميدان',
+                style: GoogleFonts.cairo(color: _textMedium, fontSize: 12, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -283,18 +294,20 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
 
   Widget _buildCaseCard(Case caseItem) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: cardWhite,
+        color: _cardWhite,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderLight, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: friendlyBlue.withAlpha(8),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: _borderLight, width: 1),
+        boxShadow: _isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: _friendlyBlue.withAlpha(8),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -308,17 +321,21 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
                 if (caseItem.organizationName != null)
                   Text(
                     caseItem.organizationName!,
-                    style: TextStyle(color: textMedium, fontSize: 12),
+                    style: GoogleFonts.cairo(
+                      color: _textMedium,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
               ],
             ),
             const SizedBox(height: 10),
             Text(
               caseItem.title,
-              style: TextStyle(
+              style: GoogleFonts.cairo(
                 fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: textDark,
+                fontWeight: FontWeight.w800,
+                color: _textDark,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -326,22 +343,26 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
             const SizedBox(height: 8),
             Text(
               caseItem.description,
-              style: TextStyle(fontSize: 14, color: textMedium),
+              style: GoogleFonts.cairo(fontSize: 13, color: _textMedium, height: 1.4),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(Icons.location_on_outlined, size: 16, color: textLight),
+                Icon(Icons.location_on_outlined, size: 16, color: _friendlyBlue),
                 const SizedBox(width: 4),
-                Text(caseItem.governorate,
-                    style: TextStyle(color: textMedium, fontSize: 13)),
+                Text(
+                  caseItem.governorate,
+                  style: GoogleFonts.cairo(color: _textMedium, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(width: 16),
-                Icon(Icons.category_outlined, size: 16, color: textLight),
+                Icon(Icons.category_outlined, size: 16, color: _friendlyBlue),
                 const SizedBox(width: 4),
-                Text(caseItem.category,
-                    style: TextStyle(color: textMedium, fontSize: 13)),
+                Text(
+                  caseItem.category,
+                  style: GoogleFonts.cairo(color: _textMedium, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
                 const Spacer(),
                 GestureDetector(
                   onTap: () {
@@ -352,17 +373,16 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
                     );
                   },
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [friendlyBlue, softTeal],
+                      gradient: LinearGradient(
+                        colors: [_friendlyBlue, _softTeal],
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
+                    child: Text(
                       'عرض',
-                      style: TextStyle(
+                      style: GoogleFonts.cairo(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
@@ -392,15 +412,15 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withAlpha(20),
+        color: color.withAlpha(_isDark ? 35 : 20),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         config['label'] as String,
-        style: TextStyle(
+        style: GoogleFonts.cairo(
           color: color,
           fontWeight: FontWeight.w700,
-          fontSize: 12,
+          fontSize: 11,
         ),
       ),
     );
@@ -415,22 +435,22 @@ class _VolunteerAvailableCasesScreenState extends State<VolunteerAvailableCasesS
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: softBlueTint,
+              color: _softBlueTint,
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.search_off_outlined,
               size: 48,
-              color: friendlyBlue.withAlpha(80),
+              color: _friendlyBlue.withAlpha(80),
             ),
           ),
           const SizedBox(height: 24),
           Text(
             'لا توجد حالات متاحة',
-            style: TextStyle(
+            style: GoogleFonts.cairo(
               fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: textDark,
+              fontWeight: FontWeight.w800,
+              color: _textDark,
             ),
           ),
         ],

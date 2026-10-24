@@ -60,6 +60,11 @@ dependencies:
   shimmer: ^3.0.0
   pull_to_refresh: ^2.0.0
   flutter_carousel_slider: ^1.1.0
+  flutter_animate: ^4.5.2
+
+  # Hardware & Scanning (NFC & QR)
+  nfc_manager: ^3.3.0
+  mobile_scanner: ^5.2.3
 
   # Path & Filesystem
   path_provider: ^2.1.4

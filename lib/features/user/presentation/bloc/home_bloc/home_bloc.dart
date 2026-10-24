@@ -1,8 +1,8 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/errors/failures.dart';
 import '../../../../../shared/constants/app_constants.dart';
+import '../../../domain/entities/case.dart';
 import '../../../domain/repositories/user_repository.dart';
 import 'home_event.dart';
 import 'home_state.dart';
@@ -30,27 +30,28 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final categoriesResult = await _userRepository.getCategories();
     if (categoriesResult.isLeft()) {
       final failure = categoriesResult.swap().getOrElse(() => ServerFailure('Unknown error'));
-      debugPrint('HomeBloc: Categories error - $failure');
       emit(HomeError(_mapFailureToMessage(failure)));
       return;
     }
     final categories = categoriesResult.getOrElse(() => []);
-    debugPrint('HomeBloc: Got ${categories.length} categories');
 
     // Fetch cases
     final casesResult = await _userRepository.getAllCases(page: 1);
     if (casesResult.isLeft()) {
       final failure = casesResult.swap().getOrElse(() => ServerFailure('Unknown error'));
-      debugPrint('HomeBloc: Cases error - $failure');
       emit(HomeError(_mapFailureToMessage(failure)));
       return;
     }
     final cases = casesResult.getOrElse(() => []);
-    debugPrint('HomeBloc: Got ${cases.length} cases');
+
+    // Collect urgent cases for the spotlight carousel
+    final urgentCases = cases.where((c) => c.priority.toLowerCase() == 'urgent').toList();
+    final heroCases = urgentCases.isNotEmpty ? urgentCases : (cases.isNotEmpty ? [cases.first] : <Case>[]);
 
     emit(HomeLoaded(
       categories: categories,
       cases: cases,
+      urgentCases: heroCases,
       hasMoreCases: cases.length >= AppConstants.defaultPageSize,
       currentPage: 1,
       selectedCategoryId: null,
@@ -69,6 +70,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       emit(CasesLoadingMore(
         categories: currentState.categories,
         currentCases: currentState.cases,
+        urgentCases: currentState.urgentCases,
         selectedCategoryId: currentState.selectedCategoryId,
       ));
       
@@ -90,6 +92,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       emit(HomeLoaded(
         categories: currentState.categories,
         cases: [...currentState.cases, ...allCases],
+        urgentCases: currentState.urgentCases,
         hasMoreCases: allCases.length >= AppConstants.defaultPageSize,
         currentPage: nextPage,
         selectedCategoryId: currentState.selectedCategoryId,
@@ -117,9 +120,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
     final cases = casesResult.getOrElse(() => []);
 
+    final urgentCases = cases.where((c) => c.priority.toLowerCase() == 'urgent').toList();
+    final heroCases = urgentCases.isNotEmpty ? urgentCases : (cases.isNotEmpty ? [cases.first] : <Case>[]);
+
     emit(HomeLoaded(
       categories: categories,
       cases: cases,
+      urgentCases: heroCases,
       hasMoreCases: cases.length >= AppConstants.defaultPageSize,
       currentPage: 1,
       selectedCategoryId: null,
@@ -133,11 +140,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     if (state is! HomeLoaded) return;
     
     final currentState = state as HomeLoaded;
-    emit(const HomeLoading());
-    debugPrint('HomeBloc: Category selected - ${event.categoryId}');
-    
-    debugPrint('HomeBloc: About to call ${event.categoryId == 0 ? "getAllCases" : "getCasesByCategory"} with categoryId: ${event.categoryId}');
-    
+    final targetCategoryId = event.categoryId == 0 ? null : event.categoryId;
+
+    // Do NOT emit HomeLoading()! Keep the UI intact and indicate loading just for the cases
+    emit(currentState.copyWith(
+      selectedCategoryId: targetCategoryId,
+      isCategoryLoading: true,
+    ));
+
     final casesResult = event.categoryId == 0
         ? await _userRepository.getAllCases(page: 1)
         : await _userRepository.getCasesByCategory(
@@ -145,23 +155,20 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             page: 1,
           );
 
-    debugPrint('HomeBloc: Repository call completed. isLeft: ${casesResult.isLeft()}');
-    
     if (casesResult.isLeft()) {
       final failure = casesResult.swap().getOrElse(() => ServerFailure('Unknown error'));
       debugPrint('HomeBloc: Category selection error - $failure');
-      emit(HomeError(_mapFailureToMessage(failure)));
+      emit(currentState.copyWith(isCategoryLoading: false));
       return;
     }
     
     final cases = casesResult.getOrElse(() => []);
-    debugPrint('HomeBloc: Got ${cases.length} cases for category ${event.categoryId}');
-    emit(HomeLoaded(
-      categories: currentState.categories,
+    emit(currentState.copyWith(
       cases: cases,
       hasMoreCases: cases.length >= AppConstants.defaultPageSize,
       currentPage: 1,
-      selectedCategoryId: event.categoryId == 0 ? null : event.categoryId,
+      selectedCategoryId: targetCategoryId,
+      isCategoryLoading: false,
     ));
   }
 

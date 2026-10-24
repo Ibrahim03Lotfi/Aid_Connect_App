@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/network/http_client.dart';
 import '../../../organization/domain/entities/org_case.dart';
@@ -388,5 +390,228 @@ class VolunteerRepositoryImpl implements VolunteerRepository {
       organizationName: json['organization_name'] ?? '',
       category: json['category'] ?? '',
     );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Phase 3: Field Operations Implementation
+  // ═══════════════════════════════════════════════════════════════════
+
+  static const String _offlineQueueKey = 'pending_offline_distributions_queue';
+
+  Future<void> _queueOfflineDistribution(Map<String, dynamic> payload) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList(_offlineQueueKey) ?? [];
+    raw.add(jsonEncode(payload));
+    await prefs.setStringList(_offlineQueueKey, raw);
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> lookupBeneficiary(String token) async {
+    try {
+      final response = await _httpClient.post<Map<String, dynamic>>(
+        '/beneficiaries/lookup',
+        data: {'token': token},
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+      if (response.data != null) {
+        return Right(response.data!);
+      }
+      return Left(ServerFailure('لم يتم العثور على العائلة المستفيدة'));
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('تعذر قراءة بيانات البطاقة'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Map<String, dynamic>>>> getActiveCampaigns() async {
+    try {
+      final response = await _httpClient.get<List<dynamic>>(
+        '/distributions/campaigns',
+        fromJsonT: (data) => data as List<dynamic>,
+      );
+      final campaigns = (response.data ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      return Right(campaigns);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في استرجاع الحملات الإغاثية النشطة'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> verifyAndDeliverAid({
+    required int campaignId,
+    required String token,
+    required String verificationMethod,
+    double? latitude,
+    double? longitude,
+    String? notes,
+  }) async {
+    final payload = {
+      'campaign_id': campaignId,
+      'token': token,
+      'verification_method': verificationMethod,
+      'latitude': latitude ?? 33.5138,
+      'longitude': longitude ?? 36.2765,
+      'notes': notes ?? 'تسليم ميداني فوري',
+      'distributed_at': DateTime.now().toIso8601String(),
+    };
+
+    try {
+      final response = await _httpClient.post<Map<String, dynamic>>(
+        '/distributions/verify-and-deliver',
+        data: payload,
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+      return Right(response.data ?? {'success': true});
+    } on Failure catch (failure) {
+      if (failure.message.contains('اتصال') || failure.message.contains('الشبكة')) {
+        await _queueOfflineDistribution(payload);
+        return Right({
+          'success': true,
+          'is_offline_cached': true,
+          'message': 'تم حفظ عملية التسليم محلياً بدون إنترنت، وستتم المزامنة تلقائياً.',
+        });
+      }
+      return Left(failure);
+    } catch (_) {
+      await _queueOfflineDistribution(payload);
+      return Right({
+        'success': true,
+        'is_offline_cached': true,
+        'message': 'تم حفظ عملية التسليم محلياً في الذاكرة المؤقتة (وضع عدم الاتصال).',
+      });
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> submitFieldAssessment({
+    required int beneficiaryId,
+    required int livingConditionScore,
+    required String housingType,
+    required bool heatingAvailable,
+    double? monthlyIncome,
+    String? incomeSource,
+    String? inspectorNotes,
+    String? urgencyRating,
+  }) async {
+    try {
+      final response = await _httpClient.post<Map<String, dynamic>>(
+        '/field-assessments',
+        data: {
+          'beneficiary_id': beneficiaryId,
+          'living_condition_score': livingConditionScore,
+          'housing_type': housingType,
+          'heating_available': heatingAvailable,
+          'monthly_income_estimate': monthlyIncome,
+          'income_source': incomeSource,
+          'inspector_notes': inspectorNotes,
+          'urgency_rating': urgencyRating ?? 'normal',
+        },
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+      return Right(response.data ?? {'success': true});
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في إرسال استمارة الكشف الميداني'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Map<String, dynamic>>>> getEmergencyMissions() async {
+    try {
+      final response = await _httpClient.get<List<dynamic>>(
+        '/emergency-missions',
+        fromJsonT: (data) => data as List<dynamic>,
+      );
+      final list = (response.data ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      return Right(list);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تحميل المهام الطارئة'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> joinEmergencyMission(int missionId) async {
+    try {
+      await _httpClient.post<dynamic>(
+        '/emergency-missions/$missionId/join',
+        fromJsonT: (data) => data,
+      );
+      return const Right(null);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في الانضمام للمهمة الطارئة'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> checkInEmergencyMission(int missionId) async {
+    try {
+      await _httpClient.post<dynamic>(
+        '/emergency-missions/$missionId/check-in',
+        fromJsonT: (data) => data,
+      );
+      return const Right(null);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في تأكيد الوصول الميداني'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getVolunteerPassport() async {
+    try {
+      final response = await _httpClient.get<Map<String, dynamic>>(
+        '/volunteer/passport/me',
+        fromJsonT: (data) => data as Map<String, dynamic>,
+      );
+      return Right(response.data ?? {});
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('فشل في استرجاع جواز التطوع الرقمي'));
+    }
+  }
+
+  @override
+  Future<int> getPendingOfflineDistributionsCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList(_offlineQueueKey) ?? [];
+    return raw.length;
+  }
+
+  @override
+  Future<Either<Failure, int>> syncOfflineDistributions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getStringList(_offlineQueueKey) ?? [];
+      if (raw.isEmpty) return const Right(0);
+
+      final list = raw.map((e) => jsonDecode(e) as Map<String, dynamic>).toList();
+      await _httpClient.post<dynamic>(
+        '/distributions/batch-sync',
+        data: {'distributions': list},
+        fromJsonT: (data) => data,
+      );
+
+      await prefs.remove(_offlineQueueKey);
+      return Right(list.length);
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (_) {
+      return Left(ServerFailure('تعذر مزامنة السجلات المعلقة حالياً'));
+    }
   }
 }

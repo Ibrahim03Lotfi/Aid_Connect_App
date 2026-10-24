@@ -1,14 +1,21 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BeneficiaryController;
 use App\Http\Controllers\Api\CaseController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\DistributionController;
+use App\Http\Controllers\Api\EmergencyMissionController;
 use App\Http\Controllers\Api\FavoriteController;
+use App\Http\Controllers\Api\FieldAssessmentController;
 use App\Http\Controllers\Api\GovernorateController;
+use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VolunteerController;
+use App\Http\Controllers\Api\VolunteerPassportController;
+use App\Http\Controllers\Api\AiIntelligenceController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -19,6 +26,10 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/governorates', [GovernorateController::class, 'index']);
 Route::get('/cases', [CaseController::class, 'index']);
 Route::get('/cases/{id}', [CaseController::class, 'show']);
+Route::get('/cases/{id}/comments', [CaseController::class, 'comments']);
+Route::post('/cases/{id}/comments', [CaseController::class, 'addComment']);
+Route::post('/cases/{id}/like', [CaseController::class, 'toggleLike']);
+Route::post('/cases/{id}/donate', [CaseController::class, 'donate']); // open for all donors (guest & auth)
 
 Route::middleware('api.token')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -62,4 +73,53 @@ Route::middleware('api.token')->group(function () {
 
     Route::get('/user', [UserController::class, 'show']);
     Route::put('/user', [UserController::class, 'update']);
+
+    // --- Athar Humanitarian Operations & Smart Cards ---
+    // Beneficiaries & NFC Cards
+    Route::get('/beneficiaries', [BeneficiaryController::class, 'index']);
+    Route::post('/beneficiaries', [BeneficiaryController::class, 'store']);
+    Route::get('/beneficiaries/{id}', [BeneficiaryController::class, 'show']);
+    Route::post('/beneficiaries/lookup', [BeneficiaryController::class, 'lookup']);
+    Route::post('/beneficiaries/{id}/pair-nfc', [BeneficiaryController::class, 'pairNfcCard']);
+
+    // NFC & QR Aid Distributions
+    Route::get('/distributions/campaigns', [DistributionController::class, 'activeCampaigns']);
+    Route::post('/distributions/verify-and-deliver', [DistributionController::class, 'verifyAndDeliver']);
+    Route::post('/distributions/batch-sync', [DistributionController::class, 'batchSync']);
+    Route::get('/distributions/my', [DistributionController::class, 'myDistributions']);
+
+    // Field Assessments (Home visits)
+    Route::get('/field-assessments', [FieldAssessmentController::class, 'index']);
+    Route::post('/field-assessments', [FieldAssessmentController::class, 'store']);
+    Route::get('/field-assessments/{id}', [FieldAssessmentController::class, 'show']);
+    Route::put('/field-assessments/{id}/status', [FieldAssessmentController::class, 'updateStatus']);
+
+    // Emergency Missions (Rapid Response Dispatch)
+    Route::get('/emergency-missions', [EmergencyMissionController::class, 'index']);
+    Route::post('/emergency-missions', [EmergencyMissionController::class, 'store']);
+    Route::get('/emergency-missions/{id}', [EmergencyMissionController::class, 'show']);
+    Route::post('/emergency-missions/{id}/join', [EmergencyMissionController::class, 'joinMission']);
+    Route::post('/emergency-missions/{id}/check-in', [EmergencyMissionController::class, 'checkIn']);
+    Route::get('/emergency-missions/my', [EmergencyMissionController::class, 'myMissions']);
+
+    // Volunteer Digital Passport & Certified Badges
+    Route::get('/volunteer/passport/me', [VolunteerPassportController::class, 'myPassport']);
+
+    // Warehouse Inventory
+    Route::get('/inventory', [InventoryController::class, 'index']);
+    Route::post('/inventory', [InventoryController::class, 'store']);
+    Route::post('/inventory/{id}/add-stock', [InventoryController::class, 'addStock']);
+    Route::get('/inventory/{id}/transactions', [InventoryController::class, 'transactions']);
+
+    // Phase 4: Applied AI Intelligence Engine
+    Route::post('/ai/audit-invoice', [AiIntelligenceController::class, 'auditInvoice']);
+    Route::post('/ai/analyze-shelter', [AiIntelligenceController::class, 'analyzeShelter']);
+    Route::post('/ai/triage', [AiIntelligenceController::class, 'triageCase']);
+    Route::post('/ai/check-fraud', [AiIntelligenceController::class, 'checkImageFraud']);
+    Route::get('/ai/match-volunteers/{missionId}', [AiIntelligenceController::class, 'matchVolunteers']);
+    Route::post('/ai/cases/{caseId}/audit', [AiIntelligenceController::class, 'fullCaseAiAudit']);
 });
+
+// Public Volunteer Certificate Verification (Scanned via QR on printed certificate)
+Route::get('/volunteer/passport/verify/{id}', [VolunteerPassportController::class, 'verifyCertificate']);
+

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../../../config/themes/app_theme.dart';
 import 'volunteer_dashboard_screen.dart';
-import 'volunteer_available_cases_screen.dart';
-import 'volunteer_my_cases_screen.dart';
+import 'nfc_aid_scanner_screen.dart';
+import 'field_assessment_screen.dart';
+import 'volunteer_passport_screen.dart';
 import 'volunteer_profile_screen.dart';
 
 // Light of Impact - Warm Hopeful Color System
@@ -27,29 +30,35 @@ class _VolunteerMainScreenState extends State<VolunteerMainScreen> {
 
   final List<Widget> _screens = const [
     VolunteerDashboardScreen(),
-    VolunteerAvailableCasesScreen(),
-    VolunteerMyCasesScreen(),
+    NfcAidScannerScreen(),
+    FieldAssessmentScreen(),
+    VolunteerPassportScreen(),
     VolunteerProfileScreen(),
   ];
 
   final List<Map<String, dynamic>> _navItems = const [
     {
-      'icon': Icons.home_outlined,
-      'activeIcon': Icons.home_rounded,
+      'icon': Icons.dashboard_outlined,
+      'activeIcon': Icons.dashboard_rounded,
       'label': 'الرئيسية',
     },
     {
-      'icon': Icons.search_outlined,
-      'activeIcon': Icons.search_rounded,
-      'label': 'البحث',
+      'icon': Icons.nfc_outlined,
+      'activeIcon': Icons.nfc_rounded,
+      'label': 'الماسح',
     },
     {
-      'icon': Icons.assignment_outlined,
-      'activeIcon': Icons.assignment_rounded,
-      'label': 'حالاتي',
+      'icon': Icons.assignment_turned_in_outlined,
+      'activeIcon': Icons.assignment_turned_in_rounded,
+      'label': 'الكشف',
     },
     {
-      'icon': Icons.person_outlined,
+      'icon': Icons.military_tech_outlined,
+      'activeIcon': Icons.military_tech_rounded,
+      'label': 'الجواز',
+    },
+    {
+      'icon': Icons.person_outline_rounded,
       'activeIcon': Icons.person_rounded,
       'label': 'الملف',
     },
@@ -57,19 +66,36 @@ class _VolunteerMainScreenState extends State<VolunteerMainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: isDark ? AppColors.darkCard : cardWhite,
+        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      ),
+    );
+
     return Scaffold(
-      backgroundColor: backgroundOffWhite,
+      backgroundColor: isDark ? AppColors.darkScaffold : const Color(0xFFF8FAFC),
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: cardWhite,
+          color: isDark ? AppColors.darkCard : cardWhite,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
           ),
+          border: Border(
+            top: BorderSide(
+              color: isDark ? AppColors.darkBorder : borderLight,
+              width: 1,
+            ),
+          ),
           boxShadow: [
             BoxShadow(
-              color: friendlyBlue.withAlpha(15),
+              color: isDark ? Colors.black.withAlpha(40) : friendlyBlue.withAlpha(15),
               blurRadius: 20,
               offset: const Offset(0, -4),
             ),
@@ -90,11 +116,18 @@ class _VolunteerMainScreenState extends State<VolunteerMainScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? friendlyBlue.withAlpha(15)
+                          ? (isDark
+                              ? AppColors.primary.withAlpha(35)
+                              : friendlyBlue.withAlpha(15))
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                       border: isSelected
-                          ? Border.all(color: friendlyBlue.withAlpha(50), width: 1)
+                          ? Border.all(
+                              color: isDark
+                                  ? AppColors.primaryLight.withAlpha(70)
+                                  : friendlyBlue.withAlpha(50),
+                              width: 1,
+                            )
                           : null,
                     ),
                     child: Column(
@@ -103,8 +136,8 @@ class _VolunteerMainScreenState extends State<VolunteerMainScreen> {
                         Icon(
                           isSelected ? item['activeIcon'] : item['icon'],
                           color: isSelected
-                              ? friendlyBlue
-                              : textMedium,
+                              ? (isDark ? AppColors.primaryLight : friendlyBlue)
+                              : (isDark ? const Color(0xFF94A3B8) : textMedium),
                           size: 24,
                         ),
                         const SizedBox(height: 4),
@@ -114,8 +147,8 @@ class _VolunteerMainScreenState extends State<VolunteerMainScreen> {
                             fontSize: 12,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: isSelected
-                                ? friendlyBlue
-                                : textMedium,
+                                ? (isDark ? AppColors.primaryLight : friendlyBlue)
+                                : (isDark ? const Color(0xFF94A3B8) : textMedium),
                           ),
                         ),
                       ],

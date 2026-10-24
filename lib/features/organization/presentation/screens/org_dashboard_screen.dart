@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../config/routes/app_routes.dart';
+import '../../../../config/themes/app_theme.dart';
+import '../../../../core/theme/theme_service.dart';
 import '../../../../services/locator.dart';
 import '../bloc/org_dashboard_bloc/org_dashboard_bloc.dart';
 import '../bloc/org_dashboard_bloc/org_dashboard_event.dart';
@@ -54,10 +57,17 @@ class _DashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgOffWhite = isDark ? AppColors.darkScaffold : const Color(0xFFF9FAFB);
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final textDarkCol = isDark ? Colors.white : const Color(0xFF1F2937);
+    final borderCol = isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB);
+    final activeBlue = isDark ? const Color(0xFF60A5FA) : friendlyBlue;
+
     return Scaffold(
-      backgroundColor: backgroundOffWhite,
+      backgroundColor: bgOffWhite,
       appBar: AppBar(
-        backgroundColor: backgroundOffWhite,
+        backgroundColor: bgOffWhite,
         elevation: 0,
         title: BlocBuilder<OrgProfileBloc, OrgProfileState>(
           builder: (context, profileState) {
@@ -71,7 +81,7 @@ class _DashboardView extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: textDark,
+                color: textDarkCol,
               ),
             );
           },
@@ -79,16 +89,38 @@ class _DashboardView extends StatelessWidget {
         centerTitle: true,
         actions: [
           Container(
-            margin: const EdgeInsets.all(8),
+            margin: const EdgeInsets.only(left: 4, top: 8, bottom: 8),
             decoration: BoxDecoration(
-              color: cardWhite,
+              color: cardBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderLight, width: 1),
+              border: Border.all(color: borderCol, width: 1),
+            ),
+            child: IconButton(
+              tooltip: isDark ? 'الوضع النهاري' : 'الوضع الليلي',
+              icon: Icon(
+                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                color: isDark ? const Color(0xFFFBBF24) : activeBlue,
+                size: 20,
+              ),
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                locator<ThemeService>().setThemeMode(
+                  isDark ? ThemeMode.light : ThemeMode.dark,
+                );
+              },
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderCol, width: 1),
             ),
             child: IconButton(
               icon: Icon(
                 Icons.notifications_outlined,
-                color: friendlyBlue,
+                color: activeBlue,
                 size: 20,
               ),
               onPressed: () {
@@ -111,18 +143,18 @@ class _DashboardView extends StatelessWidget {
                   children: [
                     _buildWelcomeSection(),
                     const SizedBox(height: 24),
-                    _buildStatsRow(state.dashboard),
+                    _buildStatsRow(state.dashboard, isDark),
                     const SizedBox(height: 28),
                     Text(
                       'الإجراءات السريعة',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: textDark,
+                        color: textDarkCol,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _buildQuickActions(context),
+                    _buildQuickActions(context, isDark),
                   ],
                 ),
               ),
@@ -136,7 +168,7 @@ class _DashboardView extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     state.message,
-                    style: TextStyle(fontSize: 16, color: textDark),
+                    style: TextStyle(fontSize: 16, color: textDarkCol),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
@@ -232,12 +264,13 @@ class _DashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsRow(OrgDashboard dashboard) {
+  Widget _buildStatsRow(OrgDashboard dashboard, bool isDark) {
     return _buildStatCard(
       'حالات المنظمة',
       dashboard.approvedCasesCount.toString(),
       softTeal,
       Icons.check_circle_rounded,
+      isDark,
     );
   }
 
@@ -246,16 +279,22 @@ class _DashboardView extends StatelessWidget {
     String value,
     Color color,
     IconData icon,
+    bool isDark,
   ) {
+    final cardBg = isDark ? AppColors.darkCard : cardWhite;
+    final borderCol = isDark ? AppColors.darkBorder : borderLight;
+    final textDarkCol = isDark ? Colors.white : textDark;
+    final textMedCol = isDark ? const Color(0xFF94A3B8) : textMedium;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cardWhite,
+        color: cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderLight, width: 1),
+        border: Border.all(color: borderCol, width: 1),
         boxShadow: [
           BoxShadow(
-            color: color.withAlpha(15),
+            color: color.withAlpha(isDark ? 25 : 15),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -266,7 +305,7 @@ class _DashboardView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withAlpha(15),
+              color: color.withAlpha(20),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 22),
@@ -277,7 +316,7 @@ class _DashboardView extends StatelessWidget {
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: textDark,
+              color: textDarkCol,
             ),
           ),
           const SizedBox(height: 4),
@@ -285,7 +324,7 @@ class _DashboardView extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 11,
-              color: textMedium,
+              color: textMedCol,
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
@@ -295,7 +334,7 @@ class _DashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _buildQuickActions(BuildContext context, bool isDark) {
     return Column(
       children: [
         _buildActionTile(
@@ -303,8 +342,9 @@ class _DashboardView extends StatelessWidget {
           'عرض الحالات',
           'إدارة حالات المنظمة',
           Icons.folder_open_outlined,
-          friendlyBlue,
+          isDark ? const Color(0xFF60A5FA) : friendlyBlue,
           () => Navigator.pushNamed(context, AppRoutes.orgCases),
+          isDark,
         ),
         const SizedBox(height: 12),
         _buildActionTile(
@@ -314,6 +354,7 @@ class _DashboardView extends StatelessWidget {
           Icons.add_circle_outline,
           softTeal,
           () => Navigator.pushNamed(context, AppRoutes.createCase),
+          isDark,
         ),
         const SizedBox(height: 12),
         _buildActionTile(
@@ -323,6 +364,7 @@ class _DashboardView extends StatelessWidget {
           Icons.business_outlined,
           Colors.orange,
           () => Navigator.pushNamed(context, AppRoutes.profile),
+          isDark,
         ),
       ],
     );
@@ -335,18 +377,25 @@ class _DashboardView extends StatelessWidget {
     IconData icon,
     Color color,
     VoidCallback onTap,
+    bool isDark,
   ) {
+    final cardBg = isDark ? AppColors.darkCard : cardWhite;
+    final borderCol = isDark ? AppColors.darkBorder : borderLight;
+    final textDarkCol = isDark ? Colors.white : textDark;
+    final textMedCol = isDark ? const Color(0xFF94A3B8) : textMedium;
+    final textLightCol = isDark ? const Color(0xFF64748B) : textLight;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: cardWhite,
+          color: cardBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderLight, width: 1),
+          border: Border.all(color: borderCol, width: 1),
           boxShadow: [
             BoxShadow(
-              color: friendlyBlue.withAlpha(8),
+              color: color.withAlpha(isDark ? 15 : 8),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -357,7 +406,7 @@ class _DashboardView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withAlpha(15),
+                color: color.withAlpha(20),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 22),
@@ -372,18 +421,18 @@ class _DashboardView extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: textDark,
+                      color: textDarkCol,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 13, color: textMedium),
+                    style: TextStyle(fontSize: 13, color: textMedCol),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: textLight),
+            Icon(Icons.arrow_forward_ios, size: 16, color: textLightCol),
           ],
         ),
       ),

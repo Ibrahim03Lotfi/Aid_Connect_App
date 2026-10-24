@@ -1,20 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'home_screen.dart';
-import 'governorates_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../../config/themes/app_theme.dart';
+import 'field_reels_screen.dart';
 import 'favorites_screen.dart';
+import 'governorates_screen.dart';
+import 'home_screen.dart';
 import 'profile_screen.dart';
-
-// Light of Impact - Warm Hopeful Color System
-const Color backgroundOffWhite = Color(0xFFF9FAFB);
-const Color softBlueTint = Color(0xFFF3F8FC);
-const Color friendlyBlue = Color(0xFF1E7ABF);
-const Color softTeal = Color(0xFF3BB3A9);
-const Color textDark = Color(0xFF1F2937);
-const Color textMedium = Color(0xFF6B7280);
-const Color textLight = Color(0xFF9CA3AF);
-const Color cardWhite = Color(0xFFFFFFFF);
-const Color borderLight = Color(0xFFE5E7EB);
 
 class UserMainScreen extends StatefulWidget {
   const UserMainScreen({super.key});
@@ -28,6 +20,7 @@ class _UserMainScreenState extends State<UserMainScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
+    FieldReelsScreen(),
     GovernoratesScreen(),
     FavoritesScreen(),
     ProfileScreen(),
@@ -40,107 +33,111 @@ class _UserMainScreenState extends State<UserMainScreen> {
       'label': 'الرئيسية',
     },
     {
-      'icon': Icons.location_on_outlined,
-      'activeIcon': Icons.location_on_rounded,
+      'icon': Icons.play_circle_outline_rounded,
+      'activeIcon': Icons.play_circle_fill_rounded,
+      'label': 'الميدان',
+    },
+    {
+      'icon': Icons.explore_outlined,
+      'activeIcon': Icons.explore_rounded,
       'label': 'المحافظات',
     },
     {
-      'icon': Icons.favorite_outline,
-      'activeIcon': Icons.favorite_rounded,
+      'icon': Icons.bookmark_outline_rounded,
+      'activeIcon': Icons.bookmark_rounded,
       'label': 'المفضلة',
     },
     {
-      'icon': Icons.person_outline,
+      'icon': Icons.person_outline_rounded,
       'activeIcon': Icons.person_rounded,
-      'label': 'الملف الشخصي',
+      'label': 'حسابي',
     },
   ];
 
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
-    );
+  }
+
+  void _onTabSelected(int index) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: isDark ? AppColors.darkCard : Colors.white,
+        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      ),
+    );
+
+    final navBgColor = isDark ? AppColors.darkCard : Colors.white;
+    final activeColor = isDark ? const Color(0xFF2E7D5E) : const Color(0xFF1A1A1A);
+    final inactiveColor = isDark ? const Color(0xFF555555) : const Color(0xFFAAAAAA);
+    final borderColor = isDark ? AppColors.darkBorder : const Color(0xFFE8E6E0);
+    final scaffoldBg = isDark ? AppColors.darkScaffold : const Color(0xFFF5F5F0);
+
     return Scaffold(
-      backgroundColor: backgroundOffWhite,
-      body: _screens[_currentIndex],
+      backgroundColor: scaffoldBg,
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: cardWhite,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+          color: navBgColor,
+          border: Border(
+            top: BorderSide(color: borderColor, width: 0.5),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: friendlyBlue.withAlpha(15),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-              spreadRadius: 0,
-            ),
-          ],
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: SizedBox(
+            height: 58,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(_navItems.length, (index) {
                 final isSelected = _currentIndex == index;
                 final item = _navItems[index];
-                return GestureDetector(
-                  onTap: () => setState(() => _currentIndex = index),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOutCubic,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      gradient: isSelected
-                          ? const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                friendlyBlue,
-                                softTeal,
-                              ],
-                            )
-                          : null,
-                      color: isSelected ? null : Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: friendlyBlue.withAlpha(40),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                                spreadRadius: 0,
-                              ),
-                            ]
-                          : null,
-                    ),
+
+                return Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _onTabSelected(index),
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        // Active indicator line
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: isSelected ? 20 : 0,
+                          height: 2,
+                          margin: const EdgeInsets.only(bottom: 6),
+                          decoration: BoxDecoration(
+                            color: isSelected ? activeColor : Colors.transparent,
+                            borderRadius: BorderRadius.circular(1),
+                          ),
+                        ),
                         Icon(
                           isSelected ? item['activeIcon'] : item['icon'],
-                          color: isSelected ? Colors.white : textMedium,
-                          size: 24,
+                          color: isSelected ? activeColor : inactiveColor,
+                          size: 23,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
                           item['label'],
-                          style: TextStyle(
-                            fontSize: 12,
+                          style: GoogleFonts.cairo(
+                            fontSize: 10,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                            color: isSelected ? Colors.white : textMedium,
+                            color: isSelected ? activeColor : inactiveColor,
+                            height: 1.2,
                           ),
                         ),
                       ],

@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/local_storage_service.dart';
-import '../../../../../features/auth/domain/entities/user.dart';
 import '../../../../../features/auth/domain/repositories/auth_repository.dart';
 import '../../../domain/repositories/user_repository.dart';
 import 'profile_event.dart';

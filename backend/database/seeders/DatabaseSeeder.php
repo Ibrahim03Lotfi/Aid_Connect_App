@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             GovernorateSeeder::class,
             DemoDataSeeder::class,
+            AtharOperationsSeeder::class,
+            RealSyrianCasesSeeder::class,
         ]);
     }
 }

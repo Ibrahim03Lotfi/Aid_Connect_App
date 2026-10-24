@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../config/routes/app_routes.dart';
 import '../../../../services/locator.dart';
 import '../../domain/entities/case.dart';
@@ -8,16 +10,19 @@ import '../bloc/governorate_bloc/governorate_bloc.dart';
 import '../bloc/governorate_bloc/governorate_event.dart';
 import '../bloc/governorate_bloc/governorate_state.dart';
 
+import '../../../../config/themes/app_theme.dart';
+import '../bloc/favorites_bloc/favorites_cubit.dart';
+
 // Light of Impact - Warm Hopeful Color System
-const Color backgroundOffWhite = Color(0xFFF9FAFB);
+const Color backgroundOffWhite = Color(0xFFF8FAFC);
 const Color softBlueTint = Color(0xFFF3F8FC);
 const Color friendlyBlue = Color(0xFF1E7ABF);
 const Color softTeal = Color(0xFF3BB3A9);
-const Color textDark = Color(0xFF1F2937);
-const Color textMedium = Color(0xFF6B7280);
-const Color textLight = Color(0xFF9CA3AF);
+const Color textDark = Color(0xFF0F172A);
+const Color textMedium = Color(0xFF64748B);
+const Color textLight = Color(0xFF94A3B8);
 const Color cardWhite = Color(0xFFFFFFFF);
-const Color borderLight = Color(0xFFE5E7EB);
+const Color borderLight = Color(0xFFE2E8F0);
 
 class GovernoratesScreen extends StatelessWidget {
   final int? categoryId;
@@ -41,21 +46,75 @@ class GovernoratesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: backgroundOffWhite,
+      backgroundColor: isDark ? AppColors.darkScaffold : backgroundOffWhite,
       appBar: AppBar(
-        backgroundColor: backgroundOffWhite,
+        backgroundColor: isDark ? AppColors.darkCard : Colors.white,
         elevation: 0,
-        title: Text(
-          'المحافظات',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: textDark,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        titleSpacing: 16,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(0.5),
+          child: Divider(
+            height: 0.5,
+            thickness: 0.5,
+            color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
           ),
         ),
-        centerTitle: true,
-        
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: Text(
+                  'أثر',
+                  style: GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'المحافظات',
+                  style: GoogleFonts.cairo(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    height: 1.1,
+                  ),
+                ),
+                Text(
+                  'استكشف الحالات الإنسانية حسب المنطقة',
+                  style: GoogleFonts.cairo(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    height: 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
       body: BlocBuilder<GovernorateBloc, GovernorateState>(
         builder: (context, state) {
@@ -502,17 +561,22 @@ class _CaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: cardWhite,
+          color: isDark ? const Color(0xFF161F30) : cardWhite,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderLight, width: 1),
+          border: Border.all(
+            color: isDark ? const Color(0xFF26334D) : borderLight,
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: friendlyBlue.withAlpha(10),
+              color: isDark ? Colors.black26 : friendlyBlue.withAlpha(10),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -565,14 +629,14 @@ class _CaseCard extends StatelessWidget {
                         Icon(
                           Icons.remove_red_eye_outlined,
                           size: 14,
-                          color: textMedium,
+                          color: isDark ? const Color(0xFF94A3B8) : textMedium,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '${caseItem.views}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: textMedium,
+                            color: isDark ? const Color(0xFF94A3B8) : textMedium,
                           ),
                         ),
                       ],
@@ -583,7 +647,7 @@ class _CaseCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: textDark,
+                        color: isDark ? Colors.white : textDark,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -601,7 +665,7 @@ class _CaseCard extends StatelessWidget {
                           caseItem.category,
                           style: TextStyle(
                             fontSize: 12,
-                            color: textMedium,
+                            color: isDark ? const Color(0xFF94A3B8) : textMedium,
                           ),
                         ),
                       ],
@@ -609,20 +673,30 @@ class _CaseCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: caseItem.isFavorited
-                      ? Colors.red.withAlpha(15)
-                      : Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  caseItem.isFavorited
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_outline,
-                  color: caseItem.isFavorited ? Colors.red : textLight,
-                  size: 22,
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  locator<FavoritesCubit>().toggleFavorite(caseItem);
+                },
+                child: BlocBuilder<FavoritesCubit, FavoritesState>(
+                  bloc: locator<FavoritesCubit>(),
+                  builder: (context, favState) {
+                    final isFav = favState.favoritedIds.contains(caseItem.id) || caseItem.isFavorited;
+                    return Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: isFav
+                            ? const Color(0xFF0284C7).withAlpha(20)
+                            : Colors.transparent,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isFav ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
+                        color: isFav ? const Color(0xFF0284C7) : (isDark ? Colors.white70 : textLight),
+                        size: 22,
+                      ),
+                    );
+                  },
                 ),
               ),
             ],

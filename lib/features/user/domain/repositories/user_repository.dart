@@ -31,6 +31,18 @@ abstract class UserRepository {
   Future<Either<Failure, void>> addToFavorites(int caseId);
   Future<Either<Failure, void>> removeFromFavorites(int caseId);
 
+  // Social & Donations
+  Future<Either<Failure, int>> toggleLikeCase(int caseId);
+  Future<Either<Failure, List<Map<String, dynamic>>>> getCaseComments(int caseId);
+  Future<Either<Failure, Map<String, dynamic>>> addCaseComment(int caseId, String comment);
+  Future<Either<Failure, Map<String, dynamic>>> donateToCase({
+    required int caseId,
+    required double amount,
+    required String paymentMethod,
+    String? donorName,
+    String? donorPhone,
+  });
+
   // Profile
   Future<Either<Failure, void>> updateProfile({
     String? name,

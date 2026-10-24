@@ -7,8 +7,33 @@ class LocalStorageService {
   static const String _userKey = 'user_data';
   static const String _roleKey = 'user_role';
   static const String _languageKey = 'app_language';
+  static const String _themeModeKey = 'app_theme_mode';
+  static const String _favoritesKey = 'cached_favorite_ids';
 
   LocalStorageService(this._prefs);
+
+  // Theme Management
+  Future<void> saveThemeMode(String mode) async {
+    await _prefs.setString(_themeModeKey, mode);
+  }
+
+  String getThemeMode() {
+    return _prefs.getString(_themeModeKey) ?? 'system';
+  }
+
+  // Favorites Caching
+  Future<void> saveCachedFavoriteIds(Set<int> ids) async {
+    await _prefs.setStringList(
+      _favoritesKey,
+      ids.map((id) => id.toString()).toList(),
+    );
+  }
+
+  Set<int> getCachedFavoriteIds() {
+    final list = _prefs.getStringList(_favoritesKey);
+    if (list == null) return {};
+    return list.map((e) => int.tryParse(e) ?? 0).where((e) => e > 0).toSet();
+  }
 
   // Token Management
   Future<void> saveToken(String token) async {
